@@ -57,6 +57,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        calculator: {
+          bg: "hsl(var(--calculator-bg))",
+          display: "hsl(var(--calculator-display))",
+          button: "hsl(var(--calculator-button))",
+          "button-hover": "hsl(var(--calculator-button-hover))",
+          operator: "hsl(var(--calculator-operator))",
+          "operator-hover": "hsl(var(--calculator-operator-hover))",
+          special: "hsl(var(--calculator-special))",
+          "special-hover": "hsl(var(--calculator-special-hover))",
+          text: "hsl(var(--calculator-text))",
+          disabled: "hsl(var(--calculator-disabled))",
+        },
+        admin: {
+          bg: "hsl(var(--admin-bg))",
+          card: "hsl(var(--admin-card))",
+          border: "hsl(var(--admin-border))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

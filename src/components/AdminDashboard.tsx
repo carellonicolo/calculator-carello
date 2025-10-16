@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Power } from "lucide-react";
+import { Calculator } from "./Calculator";
 
 type Setting = {
   id: string;
@@ -23,12 +24,15 @@ type GroupedSettings = {
 export const AdminDashboard = () => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calculatorEnabled, setCalculatorEnabled] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
     fetchSettings();
+    fetchGlobalSettings();
   }, []);
 
   const checkAuth = async () => {
@@ -59,6 +63,20 @@ export const AdminDashboard = () => {
     setLoading(false);
   };
 
+  const fetchGlobalSettings = async () => {
+    const { data, error } = await supabase
+      .from('global_settings')
+      .select('setting_value')
+      .eq('setting_key', 'calculator_enabled')
+      .single();
+    
+    if (error) {
+      console.error('Error fetching global settings:', error);
+    } else {
+      setCalculatorEnabled(data?.setting_value ?? true);
+    }
+  };
+
   const toggleSetting = async (id: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('calculator_settings')
@@ -79,6 +97,31 @@ export const AdminDashboard = () => {
       toast({
         title: "Aggiornato",
         description: "Impostazione modificata con successo",
+      });
+    }
+  };
+
+  const toggleGlobalCalculator = async () => {
+    const newValue = !calculatorEnabled;
+    const { error } = await supabase
+      .from('global_settings')
+      .update({ setting_value: newValue })
+      .eq('setting_key', 'calculator_enabled');
+    
+    if (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato della calcolatrice",
+        variant: "destructive",
+      });
+      console.error(error);
+    } else {
+      setCalculatorEnabled(newValue);
+      toast({
+        title: newValue ? "Calcolatrice Abilitata" : "Calcolatrice Disabilitata",
+        description: newValue 
+          ? "La calcolatrice è ora visibile e utilizzabile dagli utenti" 
+          : "La calcolatrice è stata disabilitata per tutti gli utenti",
       });
     }
   };
@@ -130,75 +173,140 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--admin-bg))] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-3">
-            <Settings className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard Amministrativa</h1>
-              <p className="text-muted-foreground">Gestione Funzionalità Calcolatrice</p>
+    <div className="min-h-screen bg-[hsl(var(--admin-bg))]">
+      <div className="flex flex-col lg:flex-row min-h-screen">
+        {/* Control Panel */}
+        <div className="lg:w-1/2 p-4 md:p-8 overflow-y-auto">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-3">
+                <Settings className="h-8 w-8 text-primary" />
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard Admin</h1>
+                  <p className="text-sm text-muted-foreground">Gestione Calcolatrice</p>
+                </div>
+              </div>
+              <Button onClick={handleLogout} variant="outline" size="sm" className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Esci
+              </Button>
             </div>
-          </div>
-          <Button onClick={handleLogout} variant="outline" className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Esci
-          </Button>
-        </div>
 
-        <div className="grid gap-6">
-          {Object.entries(groupedSettings).map(([category, categorySettings]) => (
-            <Card key={category} className="bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))]">
+            {/* Global Toggle Card */}
+            <Card className="mb-6 bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))] border-2">
               <CardHeader>
-                <CardTitle className="text-xl">{getCategoryTitle(category)}</CardTitle>
-                <CardDescription>{getCategoryDescription(category)}</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-full ${calculatorEnabled ? 'bg-primary/20' : 'bg-destructive/20'}`}>
+                    <Power className={`h-6 w-6 ${calculatorEnabled ? 'text-primary' : 'text-destructive'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-xl">Stato Calcolatrice</CardTitle>
+                    <CardDescription>
+                      {calculatorEnabled 
+                        ? "La calcolatrice è attiva e disponibile per tutti gli utenti" 
+                        : "La calcolatrice è disabilitata per tutti gli utenti"}
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {categorySettings.map((setting) => (
-                    <div
-                      key={setting.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <Label
-                          htmlFor={setting.id}
-                          className="text-base font-medium cursor-pointer"
-                        >
-                          {setting.function_name}
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Chiave: {setting.function_key}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`text-sm font-semibold ${
-                            setting.is_enabled ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {setting.is_enabled ? "Abilitato" : "Disabilitato"}
-                        </span>
-                        <Switch
-                          id={setting.id}
-                          checked={setting.is_enabled}
-                          onCheckedChange={() => toggleSetting(setting.id, setting.is_enabled)}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between p-4 rounded-lg bg-background/50">
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-block w-3 h-3 rounded-full ${calculatorEnabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                    <Label className="text-base font-semibold cursor-pointer" htmlFor="global-toggle">
+                      {calculatorEnabled ? "🟢 Abilitata" : "🔴 Disabilitata"}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="global-toggle"
+                    checked={calculatorEnabled}
+                    onCheckedChange={toggleGlobalCalculator}
+                  />
                 </div>
               </CardContent>
             </Card>
-          ))}
+
+            {/* Individual Function Settings */}
+            <div className="grid gap-6">
+              {Object.entries(groupedSettings).map(([category, categorySettings]) => (
+                <Card key={category} className="bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))]">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{getCategoryTitle(category)}</CardTitle>
+                    <CardDescription className="text-sm">{getCategoryDescription(category)}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {categorySettings.map((setting) => (
+                        <div
+                          key={setting.id}
+                          className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <Label
+                              htmlFor={setting.id}
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              {setting.function_name}
+                            </Label>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {setting.function_key}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-semibold ${
+                                setting.is_enabled ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {setting.is_enabled ? "ON" : "OFF"}
+                            </span>
+                            <Switch
+                              id={setting.id}
+                              checked={setting.is_enabled}
+                              onCheckedChange={() => toggleSetting(setting.id, setting.is_enabled)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-[hsl(var(--admin-card))] rounded-lg border border-[hsl(var(--admin-border))]">
+              <h3 className="text-sm font-semibold mb-1.5 flex items-center gap-2">
+                ℹ️ Informazioni
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Le modifiche vengono applicate in tempo reale. Usa l'anteprima a destra per testare.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-8 p-6 bg-[hsl(var(--admin-card))] rounded-lg border border-[hsl(var(--admin-border))]">
-          <h3 className="text-lg font-semibold mb-2">ℹ️ Informazioni</h3>
-          <p className="text-sm text-muted-foreground">
-            Le modifiche alle impostazioni vengono applicate immediatamente alla calcolatrice pubblica.
-            Gli studenti vedranno o non vedranno le funzioni in base allo stato qui configurato.
-          </p>
+        {/* Live Preview */}
+        <div className="lg:w-1/2 bg-calculator-bg border-l border-[hsl(var(--admin-border))]">
+          <div className="sticky top-0 p-4 bg-calculator-bg/95 backdrop-blur-sm border-b border-[hsl(var(--admin-border))] lg:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+              className="w-full"
+            >
+              {showPreview ? "Nascondi" : "Mostra"} Anteprima
+            </Button>
+          </div>
+          
+          <div className={`${showPreview ? 'block' : 'hidden lg:block'} h-full flex items-center justify-center p-4`}>
+            <div className="w-full max-w-md">
+              <div className="mb-4 text-center">
+                <h2 className="text-calculator-text font-semibold text-sm">Anteprima Live</h2>
+                <p className="text-calculator-text/60 text-xs">Vedi le modifiche in tempo reale</p>
+              </div>
+              <Calculator />
+            </div>
+          </div>
         </div>
       </div>
     </div>

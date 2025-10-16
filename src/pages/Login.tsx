@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Lock } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -42,30 +41,6 @@ export const Login = () => {
     setLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast({
-        title: "Errore di registrazione",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Registrazione completata",
-        description: "Account creato con successo. Effettua il login.",
-      });
-    }
-
-    setLoading(false);
-  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -79,70 +54,51 @@ export const Login = () => {
             Accedi per gestire le funzionalità della calcolatrice
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Accedi</TabsTrigger>
-              <TabsTrigger value="signup">Registrati</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-login">Email</Label>
-                  <Input
-                    id="email-login"
-                    type="email"
-                    placeholder="admin@esempio.it"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-login">Password</Label>
-                  <Input
-                    id="password-login"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Accesso in corso..." : "Accedi"}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-signup">Email</Label>
-                  <Input
-                    id="email-signup"
-                    type="email"
-                    placeholder="admin@esempio.it"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signup">Password</Label>
-                  <Input
-                    id="password-signup"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Registrazione..." : "Crea Account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+        <CardContent className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@esempio.it"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Accesso in corso..." : "Accedi"}
+            </Button>
+          </form>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">oppure</span>
+            </div>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            className="w-full gap-2" 
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Torna alla Calcolatrice
+          </Button>
         </CardContent>
       </Card>
     </div>

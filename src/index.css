@@ -8,50 +8,50 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 15% 96%;
-    --foreground: 220 15% 12%;
+    --background: 35 45% 96%;
+    --foreground: 25 30% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 12%;
+    --card: 40 50% 98%;
+    --card-foreground: 25 30% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 12%;
+    --popover: 40 50% 98%;
+    --popover-foreground: 25 30% 15%;
 
-    --primary: 220 70% 50%;
+    --primary: 30 90% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 88%;
-    --secondary-foreground: 220 15% 12%;
+    --secondary: 38 45% 88%;
+    --secondary-foreground: 25 30% 15%;
 
-    --muted: 220 15% 88%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 38 40% 90%;
+    --muted-foreground: 30 15% 45%;
 
-    --accent: 280 65% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 95% 60%;
+    --accent-foreground: 25 30% 15%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 85%;
-    --input: 220 15% 85%;
-    --ring: 220 70% 50%;
+    --border: 35 30% 85%;
+    --input: 35 30% 88%;
+    --ring: 30 90% 55%;
 
     --radius: 0.75rem;
     
-    --calculator-bg: 220 20% 18%;
-    --calculator-display: 220 20% 14%;
-    --calculator-button: 220 15% 30%;
-    --calculator-button-hover: 220 15% 35%;
-    --calculator-operator: 280 65% 55%;
-    --calculator-operator-hover: 280 65% 60%;
-    --calculator-special: 220 70% 45%;
-    --calculator-special-hover: 220 70% 50%;
-    --calculator-text: 0 0% 98%;
-    --calculator-disabled: 220 10% 25%;
+    --calculator-bg: 25 35% 20%;
+    --calculator-display: 25 30% 16%;
+    --calculator-button: 35 25% 35%;
+    --calculator-button-hover: 35 30% 42%;
+    --calculator-operator: 30 85% 50%;
+    --calculator-operator-hover: 30 85% 58%;
+    --calculator-special: 45 90% 55%;
+    --calculator-special-hover: 45 90% 62%;
+    --calculator-text: 40 50% 98%;
+    --calculator-disabled: 30 15% 30%;
     
-    --admin-bg: 220 15% 96%;
-    --admin-card: 0 0% 100%;
-    --admin-border: 220 15% 85%;
+    --admin-bg: 38 50% 96%;
+    --admin-card: 40 50% 98%;
+    --admin-border: 35 30% 85%;
 
     --sidebar-background: 0 0% 98%;
 
@@ -71,48 +71,48 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 0 0% 98%;
+    --background: 25 25% 12%;
+    --foreground: 40 50% 96%;
 
-    --card: 220 20% 14%;
-    --card-foreground: 0 0% 98%;
+    --card: 25 30% 16%;
+    --card-foreground: 40 50% 96%;
 
-    --popover: 220 20% 14%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 25 30% 16%;
+    --popover-foreground: 40 50% 96%;
 
-    --primary: 220 70% 55%;
+    --primary: 30 85% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 20%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 28 20% 22%;
+    --secondary-foreground: 40 50% 96%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 28 20% 22%;
+    --muted-foreground: 35 25% 65%;
 
-    --accent: 280 65% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 90% 58%;
+    --accent-foreground: 25 30% 15%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 25%;
-    --input: 220 15% 25%;
-    --ring: 220 70% 55%;
+    --border: 28 20% 25%;
+    --input: 28 20% 25%;
+    --ring: 30 85% 55%;
     
-    --calculator-bg: 220 20% 18%;
-    --calculator-display: 220 20% 14%;
-    --calculator-button: 220 15% 30%;
-    --calculator-button-hover: 220 15% 35%;
-    --calculator-operator: 280 65% 55%;
-    --calculator-operator-hover: 280 65% 60%;
-    --calculator-special: 220 70% 45%;
-    --calculator-special-hover: 220 70% 50%;
-    --calculator-text: 0 0% 98%;
-    --calculator-disabled: 220 10% 25%;
+    --calculator-bg: 25 35% 20%;
+    --calculator-display: 25 30% 16%;
+    --calculator-button: 35 25% 35%;
+    --calculator-button-hover: 35 30% 42%;
+    --calculator-operator: 30 85% 50%;
+    --calculator-operator-hover: 30 85% 58%;
+    --calculator-special: 45 90% 55%;
+    --calculator-special-hover: 45 90% 62%;
+    --calculator-text: 40 50% 98%;
+    --calculator-disabled: 30 15% 30%;
     
-    --admin-bg: 220 20% 10%;
-    --admin-card: 220 20% 14%;
-    --admin-border: 220 15% 25%;
+    --admin-bg: 25 25% 12%;
+    --admin-card: 25 30% 16%;
+    --admin-border: 28 20% 25%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

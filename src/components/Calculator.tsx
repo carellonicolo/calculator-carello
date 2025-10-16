@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AlertCircle } from "lucide-react";
 
 type CalculatorSettings = {
   [key: string]: boolean;
@@ -14,13 +15,15 @@ export const Calculator = () => {
   const [operation, setOperation] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [settings, setSettings] = useState<CalculatorSettings>({});
+  const [calculatorEnabled, setCalculatorEnabled] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
+    fetchGlobalSettings();
     
     // Subscribe to real-time changes
-    const channel = supabase
+    const settingsChannel = supabase
       .channel('calculator_settings_changes')
       .on(
         'postgres_changes',
@@ -31,8 +34,20 @@ export const Calculator = () => {
       )
       .subscribe();
 
+    const globalChannel = supabase
+      .channel('global_settings_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'global_settings' },
+        () => {
+          fetchGlobalSettings();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(globalChannel);
     };
   }, []);
 
@@ -51,6 +66,20 @@ export const Calculator = () => {
       settingsMap[item.function_key] = item.is_enabled;
     });
     setSettings(settingsMap);
+  };
+
+  const fetchGlobalSettings = async () => {
+    const { data, error } = await supabase
+      .from('global_settings')
+      .select('setting_value')
+      .eq('setting_key', 'calculator_enabled')
+      .single();
+    
+    if (error) {
+      console.error('Error fetching global settings:', error);
+    } else {
+      setCalculatorEnabled(data?.setting_value ?? true);
+    }
   };
 
   const isEnabled = (key: string) => settings[key] !== false;
@@ -206,7 +235,21 @@ export const Calculator = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))] border-none shadow-2xl">
+      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))] border-none shadow-2xl relative">
+        {!calculatorEnabled && (
+          <div className="absolute inset-0 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center p-8">
+            <div className="text-center">
+              <AlertCircle className="h-16 w-16 text-[hsl(var(--calculator-operator))] mx-auto mb-4" />
+              <h3 className="text-[hsl(var(--calculator-text))] text-xl font-bold mb-2">
+                Calcolatrice Temporaneamente Non Disponibile
+              </h3>
+              <p className="text-[hsl(var(--calculator-text))]/70">
+                Le funzionalità sono state disabilitate dall'amministratore
+              </p>
+            </div>
+          </div>
+        )}
+        
         <div className="mb-6">
           <div className="bg-[hsl(var(--calculator-display))] rounded-lg p-6 text-right">
             <div className="text-4xl font-bold text-[hsl(var(--calculator-text))] break-all">

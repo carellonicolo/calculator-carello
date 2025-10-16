@@ -234,8 +234,8 @@ export const Calculator = () => {
   const disabledClass = `${buttonClass} bg-[hsl(var(--calculator-disabled))] text-muted-foreground cursor-not-allowed opacity-50`;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))] border-none shadow-2xl relative">
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border border-white/20 shadow-2xl relative">
         {!calculatorEnabled && (
           <div className="absolute inset-0 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center p-8">
             <div className="text-center">

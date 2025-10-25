@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings, Power } from "lucide-react";
-import { Calculator } from "./Calculator";
+import { LogOut, Settings, Power, ToggleLeft, ToggleRight } from "lucide-react";
 
 type Setting = {
   id: string;
@@ -25,7 +24,6 @@ export const AdminDashboard = () => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
   const [calculatorEnabled, setCalculatorEnabled] = useState(true);
-  const [showPreview, setShowPreview] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -107,7 +105,7 @@ export const AdminDashboard = () => {
       .from('global_settings')
       .update({ setting_value: newValue })
       .eq('setting_key', 'calculator_enabled');
-    
+
     if (error) {
       toast({
         title: "Errore",
@@ -119,9 +117,37 @@ export const AdminDashboard = () => {
       setCalculatorEnabled(newValue);
       toast({
         title: newValue ? "Calcolatrice Abilitata" : "Calcolatrice Disabilitata",
-        description: newValue 
-          ? "La calcolatrice è ora visibile e utilizzabile dagli utenti" 
+        description: newValue
+          ? "La calcolatrice è ora visibile e utilizzabile dagli utenti"
           : "La calcolatrice è stata disabilitata per tutti gli utenti",
+      });
+    }
+  };
+
+  const toggleAllFeatures = async (enableAll: boolean) => {
+    const updatePromises = settings.map(setting =>
+      supabase
+        .from('calculator_settings')
+        .update({ is_enabled: enableAll })
+        .eq('id', setting.id)
+    );
+
+    const results = await Promise.all(updatePromises);
+    const hasError = results.some(result => result.error);
+
+    if (hasError) {
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare alcune impostazioni",
+        variant: "destructive",
+      });
+    } else {
+      setSettings(settings.map(s => ({ ...s, is_enabled: enableAll })));
+      toast({
+        title: enableAll ? "Tutte le Funzionalità Abilitate" : "Tutte le Funzionalità Disabilitate",
+        description: enableAll
+          ? "Tutte le funzionalità della calcolatrice sono state abilitate"
+          : "Tutte le funzionalità della calcolatrice sono state disabilitate",
       });
     }
   };
@@ -174,10 +200,10 @@ export const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--admin-bg))]">
-      <div className="flex flex-col lg:flex-row min-h-screen">
+      <div className="min-h-screen">
         {/* Control Panel */}
-        <div className="lg:w-1/2 p-4 md:p-8 overflow-y-auto">
-          <div className="max-w-3xl mx-auto">
+        <div className="p-4 md:p-8 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-3">
                 <Settings className="h-8 w-8 text-primary" />
@@ -222,6 +248,63 @@ export const AdminDashboard = () => {
                     checked={calculatorEnabled}
                     onCheckedChange={toggleGlobalCalculator}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Master Toggle for All Features */}
+            <Card className="mb-6 bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))] border-2">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-full bg-accent/20">
+                    {settings.every(s => s.is_enabled) ? (
+                      <ToggleRight className="h-6 w-6 text-accent" />
+                    ) : (
+                      <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-xl">Gestione Funzionalità</CardTitle>
+                    <CardDescription>
+                      Attiva o disattiva tutte le funzionalità con un solo click
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-background/50">
+                  <div className="flex-1">
+                    <Label className="text-base font-semibold cursor-pointer">
+                      {settings.every(s => s.is_enabled)
+                        ? "Tutte le funzionalità sono attive"
+                        : settings.every(s => !s.is_enabled)
+                        ? "Tutte le funzionalità sono disattivate"
+                        : "Alcune funzionalità sono attive"}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {settings.filter(s => s.is_enabled).length} di {settings.length} funzionalità attive
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleAllFeatures(false)}
+                      disabled={settings.every(s => !s.is_enabled)}
+                      className="text-xs"
+                    >
+                      Disattiva Tutto
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleAllFeatures(true)}
+                      disabled={settings.every(s => s.is_enabled)}
+                      className="text-xs"
+                    >
+                      Attiva Tutto
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -279,32 +362,8 @@ export const AdminDashboard = () => {
                 ℹ️ Informazioni
               </h3>
               <p className="text-xs text-muted-foreground">
-                Le modifiche vengono applicate in tempo reale. Usa l'anteprima a destra per testare.
+                Le modifiche vengono applicate in tempo reale sulla calcolatrice principale.
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Live Preview */}
-        <div className="lg:w-1/2 bg-calculator-bg border-l border-[hsl(var(--admin-border))]">
-          <div className="sticky top-0 p-4 bg-calculator-bg/95 backdrop-blur-sm border-b border-[hsl(var(--admin-border))] lg:hidden">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPreview(!showPreview)}
-              className="w-full"
-            >
-              {showPreview ? "Nascondi" : "Mostra"} Anteprima
-            </Button>
-          </div>
-          
-          <div className={`${showPreview ? 'block' : 'hidden lg:block'} h-full flex items-center justify-center p-4`}>
-            <div className="w-full max-w-md">
-              <div className="mb-4 text-center">
-                <h2 className="text-calculator-text font-semibold text-sm">Anteprima Live</h2>
-                <p className="text-calculator-text/60 text-xs">Vedi le modifiche in tempo reale</p>
-              </div>
-              <Calculator />
             </div>
           </div>
         </div>

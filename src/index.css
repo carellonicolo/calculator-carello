@@ -226,6 +226,10 @@ All colors MUST be HSL.
   }
 
   .login-button-float {
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .login-button-float:hover {
     animation: float-gentle 3s ease-in-out infinite;
   }
 

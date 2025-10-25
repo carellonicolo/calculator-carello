@@ -18,17 +18,53 @@ type CalculatorMode = {
   display_order: number;
 };
 
+// Default modes if database table doesn't exist yet
+const DEFAULT_MODES: CalculatorMode[] = [
+  {
+    mode_key: "standard",
+    mode_name: "Standard",
+    is_enabled: true,
+    display_order: 1,
+  },
+  {
+    mode_key: "scientific",
+    mode_name: "Scientifica",
+    is_enabled: true,
+    display_order: 2,
+  },
+  {
+    mode_key: "programmer",
+    mode_name: "Programmatore",
+    is_enabled: true,
+    display_order: 3,
+  },
+];
+
 export const Calculator = () => {
   const [settings, setSettings] = useState<CalculatorSettings>({});
-  const [modes, setModes] = useState<CalculatorMode[]>([]);
+  const [modes, setModes] = useState<CalculatorMode[]>(DEFAULT_MODES);
   const [calculatorEnabled, setCalculatorEnabled] = useState(true);
   const [currentMode, setCurrentMode] = useState<string>("standard");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSettings();
-    fetchModes();
-    fetchGlobalSettings();
+    const initCalculator = async () => {
+      try {
+        await Promise.all([
+          fetchSettings(),
+          fetchModes(),
+          fetchGlobalSettings(),
+        ]);
+      } catch (err) {
+        console.error("Error initializing calculator:", err);
+        setError("Errore nel caricamento della calcolatrice");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initCalculator();
 
     // Subscribe to real-time changes
     const settingsChannel = supabase
@@ -38,17 +74,6 @@ export const Calculator = () => {
         { event: "*", schema: "public", table: "calculator_settings" },
         () => {
           fetchSettings();
-        }
-      )
-      .subscribe();
-
-    const modesChannel = supabase
-      .channel("calculator_modes_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "calculator_modes" },
-        () => {
-          fetchModes();
         }
       )
       .subscribe();
@@ -64,56 +89,95 @@ export const Calculator = () => {
       )
       .subscribe();
 
+    // Try to subscribe to modes changes, but don't fail if table doesn't exist
+    let modesChannel;
+    try {
+      modesChannel = supabase
+        .channel("calculator_modes_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "calculator_modes" },
+          () => {
+            fetchModes();
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.log("Modes table not available for real-time updates");
+    }
+
     return () => {
       supabase.removeChannel(settingsChannel);
-      supabase.removeChannel(modesChannel);
       supabase.removeChannel(globalChannel);
+      if (modesChannel) {
+        supabase.removeChannel(modesChannel);
+      }
     };
   }, []);
 
   const fetchSettings = async () => {
-    const { data, error } = await supabase
-      .from("calculator_settings")
-      .select("function_key, is_enabled, mode");
+    try {
+      const { data, error } = await supabase
+        .from("calculator_settings")
+        .select("function_key, is_enabled");
 
-    if (error) {
-      console.error("Error fetching settings:", error);
-      return;
+      if (error) {
+        console.error("Error fetching settings:", error);
+        return;
+      }
+
+      const settingsMap: CalculatorSettings = {};
+      data?.forEach((item) => {
+        settingsMap[item.function_key] = item.is_enabled;
+      });
+      setSettings(settingsMap);
+    } catch (err) {
+      console.error("Exception fetching settings:", err);
     }
-
-    const settingsMap: CalculatorSettings = {};
-    data?.forEach((item) => {
-      settingsMap[item.function_key] = item.is_enabled;
-    });
-    setSettings(settingsMap);
-    setLoading(false);
   };
 
   const fetchModes = async () => {
-    const { data, error } = await supabase
-      .from("calculator_modes")
-      .select("*")
-      .order("display_order");
+    try {
+      const { data, error } = await supabase
+        .from("calculator_modes")
+        .select("*")
+        .order("display_order");
 
-    if (error) {
-      console.error("Error fetching modes:", error);
-      return;
+      if (error) {
+        // Table might not exist yet, use default modes
+        console.log("Calculator modes table not found, using defaults:", error);
+        setModes(DEFAULT_MODES);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setModes(data);
+      } else {
+        // No data, use defaults
+        setModes(DEFAULT_MODES);
+      }
+    } catch (err) {
+      console.error("Exception fetching modes:", err);
+      setModes(DEFAULT_MODES);
     }
-
-    setModes(data || []);
   };
 
   const fetchGlobalSettings = async () => {
-    const { data, error } = await supabase
-      .from("global_settings")
-      .select("setting_value")
-      .eq("setting_key", "calculator_enabled")
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("global_settings")
+        .select("setting_value")
+        .eq("setting_key", "calculator_enabled")
+        .single();
 
-    if (error) {
-      console.error("Error fetching global settings:", error);
-    } else {
+      if (error) {
+        console.error("Error fetching global settings:", error);
+        return;
+      }
+
       setCalculatorEnabled(data?.setting_value ?? true);
+    } catch (err) {
+      console.error("Exception fetching global settings:", err);
     }
   };
 
@@ -138,6 +202,18 @@ export const Calculator = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Caricamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2">Errore</h3>
+          <p className="text-muted-foreground">{error}</p>
         </div>
       </div>
     );
@@ -186,7 +262,12 @@ export const Calculator = () => {
           ) : (
             // Multiple modes enabled, show tabs
             <Tabs value={currentMode} onValueChange={setCurrentMode}>
-              <TabsList className="grid w-full mb-4 bg-[hsl(var(--calculator-display))]" style={{ gridTemplateColumns: `repeat(${enabledModes.length}, 1fr)` }}>
+              <TabsList
+                className="grid w-full mb-4 bg-[hsl(var(--calculator-display))]"
+                style={{
+                  gridTemplateColumns: `repeat(${enabledModes.length}, 1fr)`,
+                }}
+              >
                 {enabledModes.map((mode) => (
                   <TabsTrigger
                     key={mode.mode_key}

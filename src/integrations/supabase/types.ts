@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      calculator_modes: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_enabled: boolean
+          mode_key: string
+          mode_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order: number
+          id?: string
+          is_enabled?: boolean
+          mode_key: string
+          mode_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_enabled?: boolean
+          mode_key?: string
+          mode_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calculator_settings: {
         Row: {
           category: string

@@ -55,6 +55,7 @@ export type Database = {
           function_name: string
           id: string
           is_enabled: boolean
+          mode: string
           updated_at: string
         }
         Insert: {
@@ -64,6 +65,7 @@ export type Database = {
           function_name: string
           id?: string
           is_enabled?: boolean
+          mode?: string
           updated_at?: string
         }
         Update: {
@@ -73,6 +75,7 @@ export type Database = {
           function_name?: string
           id?: string
           is_enabled?: boolean
+          mode?: string
           updated_at?: string
         }
         Relationships: []

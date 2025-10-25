@@ -14,7 +14,7 @@ type Setting = {
   function_key: string;
   function_name: string;
   category: string;
-  mode: string;
+  mode?: string;
   is_enabled: boolean;
 };
 
@@ -31,19 +31,60 @@ type GroupedSettings = {
   [category: string]: Setting[];
 };
 
+// Default modes if table doesn't exist
+const DEFAULT_MODES: Mode[] = [
+  {
+    id: 'default-standard',
+    mode_key: 'standard',
+    mode_name: 'Standard',
+    description: 'Calcolatrice base con operazioni aritmetiche fondamentali',
+    is_enabled: true,
+    display_order: 1,
+  },
+  {
+    id: 'default-scientific',
+    mode_key: 'scientific',
+    mode_name: 'Scientifica',
+    description: 'Calcolatrice scientifica con funzioni trigonometriche, logaritmi e altro',
+    is_enabled: true,
+    display_order: 2,
+  },
+  {
+    id: 'default-programmer',
+    mode_key: 'programmer',
+    mode_name: 'Programmatore',
+    description: 'Calcolatrice per programmatori con operazioni bitwise e conversioni di base',
+    is_enabled: true,
+    display_order: 3,
+  },
+];
+
 export const AdminDashboard = () => {
   const [settings, setSettings] = useState<Setting[]>([]);
-  const [modes, setModes] = useState<Mode[]>([]);
+  const [modes, setModes] = useState<Mode[]>(DEFAULT_MODES);
   const [loading, setLoading] = useState(true);
   const [calculatorEnabled, setCalculatorEnabled] = useState(true);
+  const [modesTableExists, setModesTableExists] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAuth();
-    fetchSettings();
-    fetchModes();
-    fetchGlobalSettings();
+    const initDashboard = async () => {
+      try {
+        await checkAuth();
+        await Promise.all([
+          fetchSettings(),
+          fetchModes(),
+          fetchGlobalSettings(),
+        ]);
+      } catch (err) {
+        console.error("Error initializing dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initDashboard();
   }, []);
 
   const checkAuth = async () => {
@@ -54,56 +95,74 @@ export const AdminDashboard = () => {
   };
 
   const fetchSettings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('calculator_settings')
-      .select('*')
-      .order('mode', { ascending: true })
-      .order('category', { ascending: true })
-      .order('function_name', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('calculator_settings')
+        .select('*')
+        .order('category', { ascending: true })
+        .order('function_name', { ascending: true });
 
-    if (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare le impostazioni",
-        variant: "destructive",
-      });
-      console.error(error);
-    } else {
-      setSettings(data || []);
+      if (error) {
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare le impostazioni",
+          variant: "destructive",
+        });
+        console.error(error);
+      } else {
+        // Make sure each setting has a mode field, default to 'scientific' if not present
+        const settingsWithMode = (data || []).map(s => ({
+          ...s,
+          mode: s.mode || 'scientific'
+        }));
+        setSettings(settingsWithMode);
+      }
+    } catch (err) {
+      console.error("Exception fetching settings:", err);
     }
-    setLoading(false);
   };
 
   const fetchModes = async () => {
-    const { data, error } = await supabase
-      .from('calculator_modes')
-      .select('*')
-      .order('display_order', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('calculator_modes')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-    if (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare le modalità",
-        variant: "destructive",
-      });
-      console.error(error);
-    } else {
-      setModes(data || []);
+      if (error) {
+        // Table doesn't exist, use defaults
+        console.log("Modes table not found, using defaults");
+        setModes(DEFAULT_MODES);
+        setModesTableExists(false);
+      } else if (data && data.length > 0) {
+        setModes(data);
+        setModesTableExists(true);
+      } else {
+        setModes(DEFAULT_MODES);
+        setModesTableExists(false);
+      }
+    } catch (err) {
+      console.error("Exception fetching modes:", err);
+      setModes(DEFAULT_MODES);
+      setModesTableExists(false);
     }
   };
 
   const fetchGlobalSettings = async () => {
-    const { data, error } = await supabase
-      .from('global_settings')
-      .select('setting_value')
-      .eq('setting_key', 'calculator_enabled')
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('global_settings')
+        .select('setting_value')
+        .eq('setting_key', 'calculator_enabled')
+        .single();
 
-    if (error) {
-      console.error('Error fetching global settings:', error);
-    } else {
-      setCalculatorEnabled(data?.setting_value ?? true);
+      if (error) {
+        console.error('Error fetching global settings:', error);
+      } else {
+        setCalculatorEnabled(data?.setting_value ?? true);
+      }
+    } catch (err) {
+      console.error('Exception fetching global settings:', err);
     }
   };
 
@@ -132,6 +191,15 @@ export const AdminDashboard = () => {
   };
 
   const toggleMode = async (id: string, currentValue: boolean) => {
+    if (!modesTableExists) {
+      toast({
+        title: "Funzionalità non disponibile",
+        description: "La tabella delle modalità non è ancora stata creata. Le migrazioni del database devono essere eseguite.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from('calculator_modes')
       .update({ is_enabled: !currentValue })
@@ -287,6 +355,16 @@ export const AdminDashboard = () => {
               </Button>
             </div>
 
+            {!modesTableExists && (
+              <Card className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    ⚠️ <strong>Nota:</strong> La tabella delle modalità non è ancora stata creata. Le funzionalità di gestione modalità saranno limitate fino all'esecuzione delle migrazioni del database. Le 3 modalità (Standard, Scientifica, Programmatore) sono comunque disponibili e funzionanti.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Global Toggle Card */}
             <Card className="mb-6 bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))] border-2">
               <CardHeader>
@@ -326,7 +404,9 @@ export const AdminDashboard = () => {
               <CardHeader>
                 <CardTitle className="text-xl">Gestione Modalità</CardTitle>
                 <CardDescription>
-                  Abilita o disabilita le diverse modalità della calcolatrice
+                  {modesTableExists
+                    ? "Abilita o disabilita le diverse modalità della calcolatrice"
+                    : "Le modalità sono visualizzate ma non modificabili (tabella database non creata)"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -352,6 +432,7 @@ export const AdminDashboard = () => {
                       <Switch
                         checked={mode.is_enabled}
                         onCheckedChange={() => toggleMode(mode.id, mode.is_enabled)}
+                        disabled={!modesTableExists}
                       />
                     </div>
                   ))}

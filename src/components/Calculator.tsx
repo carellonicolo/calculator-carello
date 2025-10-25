@@ -16,6 +16,8 @@ export const Calculator = () => {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [settings, setSettings] = useState<CalculatorSettings>({});
   const [calculatorEnabled, setCalculatorEnabled] = useState(true);
+  const [historyDisplay, setHistoryDisplay] = useState<string>("");
+  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,6 +87,9 @@ export const Calculator = () => {
   const isEnabled = (key: string) => settings[key] !== false;
 
   const inputDigit = (digit: string) => {
+    setIsAnimating(true);
+    setTimeout(() => setIsAnimating(false), 300);
+    
     if (waitingForOperand) {
       setDisplay(String(digit));
       setWaitingForOperand(false);
@@ -107,6 +112,7 @@ export const Calculator = () => {
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
+    setHistoryDisplay("");
   };
 
   const performOperation = (nextOperation: string) => {
@@ -114,6 +120,7 @@ export const Calculator = () => {
 
     if (previousValue === null) {
       setPreviousValue(inputValue);
+      setHistoryDisplay(`${inputValue} ${nextOperation}`);
     } else if (operation) {
       const currentValue = previousValue || 0;
       let newValue = currentValue;
@@ -138,6 +145,9 @@ export const Calculator = () => {
 
       setDisplay(String(newValue));
       setPreviousValue(newValue);
+      setHistoryDisplay(`${currentValue} ${operation} ${inputValue} = ${newValue}`);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 300);
     }
 
     setWaitingForOperand(true);
@@ -227,17 +237,19 @@ export const Calculator = () => {
     setDisplay(String(value / 100));
   };
 
-  const buttonClass = "h-14 text-lg font-semibold transition-all active:scale-95";
-  const numberClass = `${buttonClass} bg-[hsl(var(--calculator-button))] hover:bg-[hsl(var(--calculator-button-hover))] text-[hsl(var(--calculator-text))]`;
-  const operatorClass = `${buttonClass} bg-[hsl(var(--calculator-operator))] hover:bg-[hsl(var(--calculator-operator-hover))] text-white`;
-  const specialClass = `${buttonClass} bg-[hsl(var(--calculator-special))] hover:bg-[hsl(var(--calculator-special-hover))] text-white`;
+  const buttonClass = "btn-3d h-16 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg";
+  const numberClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-button-start))] to-[hsl(var(--calculator-button-end))] text-[hsl(var(--calculator-text))] hover:shadow-lift border border-white/10`;
+  const operatorClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-operator))] to-[hsl(var(--calculator-operator))]/80 text-white hover:shadow-glow-lg hover:scale-110 border border-[hsl(var(--calculator-operator-glow))]/30`;
+  const specialClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-special))] to-[hsl(var(--calculator-special))]/80 text-white hover:shadow-glow border border-[hsl(var(--calculator-special-shine))]/30`;
   const disabledClass = `${buttonClass} bg-[hsl(var(--calculator-disabled))] text-muted-foreground cursor-not-allowed opacity-50`;
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
-      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border border-white/20 shadow-2xl relative">
+      <Card className="w-full max-w-md p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl relative overflow-hidden animate-slide-in-up">
+        {/* Animated border glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 animate-pulse opacity-50 pointer-events-none" />
         {!calculatorEnabled && (
-          <div className="absolute inset-0 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center p-8">
+          <div className="absolute inset-0 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-sm rounded-lg z-20 flex items-center justify-center p-8">
             <div className="text-center">
               <AlertCircle className="h-16 w-16 text-[hsl(var(--calculator-operator))] mx-auto mb-4" />
               <h3 className="text-[hsl(var(--calculator-text))] text-xl font-bold mb-2">
@@ -250,11 +262,31 @@ export const Calculator = () => {
           </div>
         )}
         
-        <div className="mb-6">
-          <div className="bg-[hsl(var(--calculator-display))] rounded-lg p-6 text-right">
-            <div className="text-4xl font-bold text-[hsl(var(--calculator-text))] break-all">
-              {display}
+        {/* Modern Digital Display */}
+        <div className="relative mb-6 p-6 bg-gradient-to-b from-[hsl(var(--calculator-display))] to-[hsl(var(--calculator-display))]/80 rounded-2xl min-h-[100px] flex flex-col justify-end border-2 border-[hsl(var(--calculator-display-glow))]/20 shadow-inner animate-glow-pulse overflow-hidden z-10">
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent)',
+            backgroundSize: '50px 50px'
+          }} />
+          
+          {/* History/Operation display */}
+          {historyDisplay && (
+            <div className="text-sm font-mono text-[hsl(var(--calculator-text))]/50 mb-2 text-right truncate">
+              {historyDisplay}
             </div>
+          )}
+          
+          {/* Current operation indicator */}
+          {operation && (
+            <div className="absolute top-3 right-3 text-xs font-bold text-[hsl(var(--calculator-operator-glow))] bg-[hsl(var(--calculator-operator))]/20 px-2 py-1 rounded">
+              {operation}
+            </div>
+          )}
+          
+          {/* Main display */}
+          <div className={`text-5xl font-mono text-[hsl(var(--calculator-text))] break-all text-right glow-text transition-all duration-300 ${isAnimating ? 'scale-105' : 'scale-100'}`}>
+            {display}
           </div>
         </div>
 
@@ -295,7 +327,7 @@ export const Calculator = () => {
           <div className="grid grid-cols-4 gap-3">
             <Button onClick={() => inputDigit("0")} className={`${numberClass} col-span-2`}>0</Button>
             <Button onClick={inputDecimal} className={numberClass}>.</Button>
-            <Button onClick={() => performOperation("=")} className={operatorClass}>=</Button>
+            <Button onClick={() => performOperation("=")} className={`${buttonClass} bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:shadow-glow-lg hover:scale-105 border border-orange-400/30`}>=</Button>
           </div>
 
           {/* Scientific Functions */}

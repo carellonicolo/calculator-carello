@@ -40,14 +40,21 @@ All colors MUST be HSL.
     
     --calculator-bg: 25 35% 20%;
     --calculator-display: 25 30% 16%;
+    --calculator-display-glow: 30 100% 60%;
+    --calculator-display-shadow: 30 100% 70%;
     --calculator-button: 35 25% 35%;
     --calculator-button-hover: 35 30% 42%;
+    --calculator-button-start: 35 40% 45%;
+    --calculator-button-end: 35 40% 38%;
     --calculator-operator: 30 85% 50%;
     --calculator-operator-hover: 30 85% 58%;
+    --calculator-operator-glow: 30 95% 60%;
     --calculator-special: 45 90% 55%;
     --calculator-special-hover: 45 90% 62%;
+    --calculator-special-shine: 45 100% 65%;
     --calculator-text: 40 50% 98%;
     --calculator-disabled: 30 15% 30%;
+    --ripple-color: 45 100% 70%;
     
     --admin-bg: 38 50% 96%;
     --admin-card: 40 50% 98%;
@@ -101,14 +108,21 @@ All colors MUST be HSL.
     
     --calculator-bg: 25 35% 20%;
     --calculator-display: 25 30% 16%;
+    --calculator-display-glow: 30 100% 60%;
+    --calculator-display-shadow: 30 100% 70%;
     --calculator-button: 35 25% 35%;
     --calculator-button-hover: 35 30% 42%;
+    --calculator-button-start: 35 40% 45%;
+    --calculator-button-end: 35 40% 38%;
     --calculator-operator: 30 85% 50%;
     --calculator-operator-hover: 30 85% 58%;
+    --calculator-operator-glow: 30 95% 60%;
     --calculator-special: 45 90% 55%;
     --calculator-special-hover: 45 90% 62%;
+    --calculator-special-shine: 45 100% 65%;
     --calculator-text: 40 50% 98%;
     --calculator-disabled: 30 15% 30%;
+    --ripple-color: 45 100% 70%;
     
     --admin-bg: 25 25% 12%;
     --admin-card: 25 30% 16%;
@@ -131,5 +145,96 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Calculator 3D Button Effects */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(var(--calculator-display-glow) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(var(--calculator-display-glow) / 0.6);
+    }
+  }
+
+  @keyframes slide-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+
+  .btn-3d {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .btn-3d:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-3d:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  .btn-3d::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: hsl(var(--ripple-color) / 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .btn-3d:active::before {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+    transition: width 0.6s, height 0.6s, opacity 0.6s;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px hsl(var(--calculator-display-shadow) / 0.8),
+                 0 0 40px hsl(var(--calculator-display-shadow) / 0.4);
+  }
+
+  .login-button-float {
+    animation: float-gentle 3s ease-in-out infinite;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
 }

@@ -1,10 +1,42 @@
+import { useEffect, useState } from "react";
 import { Calculator } from "@/components/Calculator";
-import { Lock } from "lucide-react";
+import { Lock, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAdmin, loading } = useUserRole();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAdminClick = () => {
+    if (isAuthenticated && isAdmin) {
+      navigate('/admin');
+    } else if (isAuthenticated && !isAdmin) {
+      navigate('/login');
+    } else {
+      navigate('/login');
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[hsl(35,45%,96%)] via-[hsl(40,50%,92%)] to-[hsl(30,50%,88%)]">
@@ -20,14 +52,25 @@ const Index = () => {
       <div className="absolute top-20 right-20 w-32 h-32 border-2 border-primary/20 rounded-full animate-spin-slow" />
       <div className="absolute bottom-32 left-32 w-24 h-24 border-2 border-accent/20 rounded-lg rotate-45 animate-pulse" />
       
-      {/* Floating Login Button */}
+      {/* Floating Admin Button */}
       <Button
-        onClick={() => navigate('/login')}
-        className="fixed top-6 right-6 z-50 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group"
+        onClick={handleAdminClick}
+        disabled={loading}
+        className={`fixed top-6 right-6 z-50 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group ${
+          isAdmin ? 'border-primary/50 bg-primary/10' : ''
+        }`}
         size="lg"
       >
-        <Lock className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
-        <span className="text-foreground font-medium">Admin</span>
+        {loading ? (
+          <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        ) : isAdmin ? (
+          <Shield className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+        ) : (
+          <Lock className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+        )}
+        <span className="text-foreground font-medium">
+          {isAdmin ? 'Dashboard' : 'Admin'}
+        </span>
       </Button>
       
       {/* Calculator with glassmorphism effect */}

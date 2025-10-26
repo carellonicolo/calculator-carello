@@ -30,12 +30,26 @@ export const Login = () => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
+      setLoading(false);
+      return;
+    }
+
+    // Controlla se l'utente è admin
+    const { data: isAdminData } = await supabase.rpc('is_admin');
+    
+    if (isAdminData === true) {
       toast({
         title: "Accesso effettuato",
         description: "Benvenuto nell'area amministrativa",
       });
       navigate("/admin");
+    } else {
+      toast({
+        title: "Accesso negato",
+        description: "Non hai i permessi di amministratore",
+        variant: "destructive",
+      });
+      navigate("/");
     }
 
     setLoading(false);

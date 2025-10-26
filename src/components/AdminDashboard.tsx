@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings, Power, ToggleLeft, ToggleRight, Calculator, Atom, Code } from "lucide-react";
+import { LogOut, Settings, Power, ToggleLeft, ToggleRight, Calculator, Atom, Code, Calculator as CalcIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Setting = {
@@ -349,10 +349,26 @@ export const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground">Gestione Calcolatrice Multi-Modale</p>
                 </div>
               </div>
-              <Button onClick={handleLogout} variant="outline" size="sm" className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Esci
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => navigate('/')} 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <CalcIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Calcolatrice</span>
+                </Button>
+                <Button 
+                  onClick={handleLogout} 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Esci</span>
+                </Button>
+              </div>
             </div>
 
             {!modesTableExists && (

@@ -42,11 +42,11 @@ const Index = () => {
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[hsl(35,45%,96%)] via-[hsl(40,50%,92%)] to-[hsl(30,50%,88%)]">
       {/* Animated gradient orbs */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-3xl animate-pulse" 
-           style={{ animation: "float 20s ease-in-out infinite" }} />
+           style={{ animation: "float 20s ease-in-out infinite", willChange: "transform", transform: "translateZ(0)" }} />
       <div className="absolute bottom-0 right-0 w-[32rem] h-[32rem] bg-gradient-to-tl from-accent/25 to-primary/25 rounded-full blur-3xl animate-pulse" 
-           style={{ animation: "float 25s ease-in-out infinite reverse" }} />
+           style={{ animation: "float 25s ease-in-out infinite reverse", willChange: "transform", transform: "translateZ(0)" }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[28rem] h-[28rem] bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl"
-           style={{ animation: "float 30s ease-in-out infinite" }} />
+           style={{ animation: "float 30s ease-in-out infinite", willChange: "transform", transform: "translate(-50%, -50%) translateZ(0)" }} />
       
       {/* Decorative geometric shapes */}
       <div className="absolute top-20 right-20 w-32 h-32 border-2 border-primary/20 rounded-full animate-spin-slow" />

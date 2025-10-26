@@ -6,6 +6,7 @@ import { AlertCircle, Calculator as CalcIcon, Atom, Code } from "lucide-react";
 import { StandardCalculator } from "./modes/StandardCalculator";
 import { ScientificCalculator } from "./modes/ScientificCalculator";
 import { ProgrammerCalculator } from "./modes/ProgrammerCalculator";
+import { createSilentRealtimeChannel } from "@/lib/realtimeErrorHandler";
 
 type CalculatorSettings = {
   [key: string]: boolean;
@@ -66,44 +67,50 @@ export const Calculator = () => {
 
     initCalculator();
 
-    // Subscribe to real-time changes
-    const settingsChannel = supabase
-      .channel("calculator_settings_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "calculator_settings" },
-        () => {
-          fetchSettings();
-        }
-      )
-      .subscribe();
+    // Subscribe to real-time changes with silent error handling
+    const settingsChannel = createSilentRealtimeChannel(
+      supabase
+        .channel("calculator_settings_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "calculator_settings" },
+          () => {
+            fetchSettings();
+          }
+        )
+    );
+    settingsChannel.subscribe();
 
-    const globalChannel = supabase
-      .channel("global_settings_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "global_settings" },
-        () => {
-          fetchGlobalSettings();
-        }
-      )
-      .subscribe();
+    const globalChannel = createSilentRealtimeChannel(
+      supabase
+        .channel("global_settings_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "global_settings" },
+          () => {
+            fetchGlobalSettings();
+          }
+        )
+    );
+    globalChannel.subscribe();
 
     // Try to subscribe to modes changes, but don't fail if table doesn't exist
     let modesChannel;
     try {
-      modesChannel = supabase
-        .channel("calculator_modes_changes")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "calculator_modes" },
-          () => {
-            fetchModes();
-          }
-        )
-        .subscribe();
+      modesChannel = createSilentRealtimeChannel(
+        supabase
+          .channel("calculator_modes_changes")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "calculator_modes" },
+            () => {
+              fetchModes();
+            }
+          )
+      );
+      modesChannel.subscribe();
     } catch (err) {
-      console.log("Modes table not available for real-time updates");
+      // Silently ignore if modes table not available
     }
 
     return () => {

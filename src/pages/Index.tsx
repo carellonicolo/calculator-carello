@@ -56,18 +56,18 @@ const Index = () => {
       <Button
         onClick={handleAdminClick}
         disabled={loading}
-        className={`fixed md:top-6 md:right-6 bottom-6 right-4 z-50 w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-2 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group ${
+        className={`fixed top-6 right-6 z-50 px-4 py-2 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group ${
           isAdmin ? 'border-primary/50 bg-primary/10' : ''
         }`}
       >
         {loading ? (
-          <div className="md:mr-2 h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         ) : isAdmin ? (
-          <Shield className="md:mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+          <Shield className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
         ) : (
-          <Lock className="md:mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+          <Lock className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
         )}
-        <span className="hidden md:inline text-foreground font-medium">
+        <span className="text-foreground font-medium">
           {isAdmin ? 'Dashboard' : 'Admin'}
         </span>
       </Button>

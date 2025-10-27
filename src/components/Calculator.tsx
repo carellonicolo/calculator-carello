@@ -270,7 +270,7 @@ export const Calculator = () => {
             // Multiple modes enabled, show tabs
             <Tabs value={currentMode} onValueChange={setCurrentMode}>
               <TabsList
-                className="grid w-full mb-4 bg-[hsl(var(--calculator-display))] gap-0 p-0 sm:gap-1 sm:p-1"
+                className="grid w-full mb-4 bg-[hsl(var(--calculator-display))] gap-0 p-0 md:gap-1 md:p-1"
                 style={{
                   gridTemplateColumns: `repeat(${enabledModes.length}, 1fr)`,
                 }}
@@ -279,11 +279,10 @@ export const Calculator = () => {
                   <TabsTrigger
                     key={mode.mode_key}
                     value={mode.mode_key}
-                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white flex items-center justify-center gap-1 sm:gap-2 px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm"
+                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white flex items-center justify-center gap-1 md:gap-2 px-2 py-2 md:px-4 md:py-2.5 text-xs md:text-sm"
                   >
                     {getModeIcon(mode.mode_key)}
-                    <span className="hidden md:inline">{mode.mode_name}</span>
-                    <span className="hidden sm:inline md:hidden">{mode.mode_name.substring(0, 3)}</span>
+                    <span className="hidden sm:inline">{mode.mode_name}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>

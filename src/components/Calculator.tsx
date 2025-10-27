@@ -228,7 +228,7 @@ export const Calculator = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
-      <Card className="w-full max-w-2xl p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl relative overflow-hidden animate-slide-in-up">
+      <Card className="w-full max-w-2xl p-3 sm:p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl relative overflow-hidden animate-slide-in-up">
         {/* Animated border glow */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 animate-pulse opacity-50 pointer-events-none" />
 
@@ -270,7 +270,7 @@ export const Calculator = () => {
             // Multiple modes enabled, show tabs
             <Tabs value={currentMode} onValueChange={setCurrentMode}>
               <TabsList
-                className="grid w-full mb-4 bg-[hsl(var(--calculator-display))]"
+                className="grid w-full mb-4 bg-[hsl(var(--calculator-display))] gap-0 p-0 sm:gap-1 sm:p-1"
                 style={{
                   gridTemplateColumns: `repeat(${enabledModes.length}, 1fr)`,
                 }}
@@ -279,10 +279,11 @@ export const Calculator = () => {
                   <TabsTrigger
                     key={mode.mode_key}
                     value={mode.mode_key}
-                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white flex items-center gap-2"
+                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white flex items-center justify-center gap-1 sm:gap-2 px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm"
                   >
                     {getModeIcon(mode.mode_key)}
-                    {mode.mode_name}
+                    <span className="hidden md:inline">{mode.mode_name}</span>
+                    <span className="hidden sm:inline md:hidden">{mode.mode_name.substring(0, 3)}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>

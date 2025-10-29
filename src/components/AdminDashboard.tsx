@@ -432,7 +432,7 @@ export const AdminDashboard = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background/50">
                   <div className="flex items-center gap-3">
                     <span className={`inline-block w-3 h-3 rounded-full ${calculatorEnabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
@@ -445,6 +445,37 @@ export const AdminDashboard = () => {
                     checked={calculatorEnabled}
                     onCheckedChange={toggleGlobalCalculator}
                   />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-background/50">
+                  <div className="flex-1">
+                    <Label className="text-base font-semibold">
+                      Gestione Globale Funzionalità
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {settings.filter(s => s.is_enabled).length} di {settings.length} funzionalità attive
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleAllFeatures(false)}
+                      disabled={settings.every(s => !s.is_enabled)}
+                      className="text-xs"
+                    >
+                      Disattiva Tutto
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleAllFeatures(true)}
+                      disabled={settings.every(s => s.is_enabled)}
+                      className="text-xs"
+                    >
+                      Attiva Tutto
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -486,63 +517,6 @@ export const AdminDashboard = () => {
                       />
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Master Toggle for All Features */}
-            <Card className="mb-6 bg-[hsl(var(--admin-card))] border-[hsl(var(--admin-border))] border-2">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-accent/20">
-                    {settings.every(s => s.is_enabled) ? (
-                      <ToggleRight className="h-6 w-6 text-accent" />
-                    ) : (
-                      <ToggleLeft className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">Gestione Funzionalità Globale</CardTitle>
-                    <CardDescription>
-                      Attiva o disattiva tutte le funzionalità con un solo click
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-background/50">
-                  <div className="flex-1">
-                    <Label className="text-base font-semibold cursor-pointer">
-                      {settings.every(s => s.is_enabled)
-                        ? "Tutte le funzionalità sono attive"
-                        : settings.every(s => !s.is_enabled)
-                        ? "Tutte le funzionalità sono disattivate"
-                        : "Alcune funzionalità sono attive"}
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {settings.filter(s => s.is_enabled).length} di {settings.length} funzionalità attive
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleAllFeatures(false)}
-                      disabled={settings.every(s => !s.is_enabled)}
-                      className="text-xs"
-                    >
-                      Disattiva Tutto
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleAllFeatures(true)}
-                      disabled={settings.every(s => s.is_enabled)}
-                      className="text-xs"
-                    >
-                      Attiva Tutto
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>

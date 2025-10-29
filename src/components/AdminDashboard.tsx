@@ -280,8 +280,42 @@ export const AdminDashboard = () => {
       toast({
         title: enableAll ? "Funzionalità Abilitate" : "Funzionalità Disabilitate",
         description: enableAll
-          ? `Tutte le funzionalità ${modeFilter ? `della modalità ${modeFilter}` : ""} sono state abilitate`
-          : `Tutte le funzionalità ${modeFilter ? `della modalità ${modeFilter}` : ""} sono state disabilitate`,
+          ? "Tutte le funzionalità selezionate sono state abilitate"
+          : "Tutte le funzionalità selezionate sono state disabilitate",
+      });
+    }
+  };
+
+  const toggleCategoryFeatures = async (mode: string, category: string, enableAll: boolean) => {
+    const settingsToUpdate = settings.filter(s => s.mode === mode && s.category === category);
+    
+    const updatePromises = settingsToUpdate.map(setting =>
+      supabase
+        .from('calculator_settings')
+        .update({ is_enabled: enableAll })
+        .eq('id', setting.id)
+    );
+
+    const results = await Promise.all(updatePromises);
+    const hasError = results.some(result => result.error);
+
+    if (hasError) {
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare alcune impostazioni della categoria",
+        variant: "destructive",
+      });
+    } else {
+      setSettings(settings.map(s =>
+        (s.mode === mode && s.category === category)
+          ? { ...s, is_enabled: enableAll }
+          : s
+      ));
+      toast({
+        title: enableAll ? "Categoria Abilitata" : "Categoria Disabilitata",
+        description: enableAll
+          ? `Tutte le funzioni di "${getCategoryTitle(category)}" sono state abilitate`
+          : `Tutte le funzioni di "${getCategoryTitle(category)}" sono state disabilitate`,
       });
     }
   };
@@ -574,7 +608,13 @@ export const AdminDashboard = () => {
                           {Object.entries(groupedSettings).map(([category, categorySettings]) => (
                             <Card key={category} className="bg-background/30">
                               <CardHeader>
-                                <CardTitle className="text-base">{getCategoryTitle(category)}</CardTitle>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-base">{getCategoryTitle(category)}</CardTitle>
+                                  <Switch
+                                    checked={categorySettings.every(s => s.is_enabled)}
+                                    onCheckedChange={(checked) => toggleCategoryFeatures(mode, category, checked)}
+                                  />
+                                </div>
                               </CardHeader>
                               <CardContent>
                                 <div className="space-y-2">

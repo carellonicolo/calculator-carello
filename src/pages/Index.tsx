@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { Calculator } from "@/components/Calculator";
-import { Lock, Shield } from "lucide-react";
+import { Lock, Shield, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { HelpModal } from "@/components/HelpModal";
 
 const Index = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   const { isAdmin, loading } = useUserRole();
 
   useEffect(() => {
@@ -52,6 +54,15 @@ const Index = () => {
       <div className="absolute top-20 right-20 w-32 h-32 border-2 border-primary/20 rounded-full animate-spin-slow" />
       <div className="absolute bottom-32 left-32 w-24 h-24 border-2 border-accent/20 rounded-lg rotate-45 animate-pulse" />
       
+      {/* Floating Help Button */}
+      <Button
+        onClick={() => setHelpModalOpen(true)}
+        className="fixed top-6 left-6 z-50 px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group"
+      >
+        <HelpCircle className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+        <span className="text-foreground font-medium hidden sm:inline">Guida</span>
+      </Button>
+      
       {/* Floating Admin Button */}
       <Button
         onClick={handleAdminClick}
@@ -76,6 +87,13 @@ const Index = () => {
       <div className="relative z-10">
         <Calculator />
       </div>
+
+      {/* Help Modal */}
+      <HelpModal 
+        open={helpModalOpen} 
+        onOpenChange={setHelpModalOpen}
+        defaultTab="students"
+      />
     </div>
   );
 };

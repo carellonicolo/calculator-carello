@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings, Power, ToggleLeft, ToggleRight, Calculator, Atom, Code, Calculator as CalcIcon } from "lucide-react";
+import { LogOut, Settings, Power, ToggleLeft, ToggleRight, Calculator, Atom, Code, Calculator as CalcIcon, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HelpModal } from "@/components/HelpModal";
 
 type Setting = {
   id: string;
@@ -65,6 +66,7 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [calculatorEnabled, setCalculatorEnabled] = useState(true);
   const [modesTableExists, setModesTableExists] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -385,6 +387,15 @@ export const AdminDashboard = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Button 
+                  onClick={() => setHelpModalOpen(true)}
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Guida</span>
+                </Button>
+                <Button 
                   onClick={() => navigate('/')} 
                   variant="outline" 
                   size="sm" 
@@ -641,12 +652,20 @@ export const AdminDashboard = () => {
                 Informazioni
               </h3>
               <p className="text-xs text-muted-foreground">
-                Le modifiche vengono applicate in tempo reale sulla calcolatrice principale.
+                Le modifiche sono salvate automaticamente e si applicano immediatamente a tutti gli utenti. 
+                Usa il pulsante "Guida" in alto per maggiori informazioni.
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Help Modal */}
+      <HelpModal 
+        open={helpModalOpen} 
+        onOpenChange={setHelpModalOpen}
+        defaultTab="teachers"
+      />
     </div>
   );
 };

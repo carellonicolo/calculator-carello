@@ -307,7 +307,7 @@ export const Calculator = () => {
                   <TabsTrigger
                     key={mode.mode_key}
                     value={mode.mode_key}
-                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white flex items-center justify-center gap-1 sm:gap-2 px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm"
+                    className="data-[state=active]:bg-[hsl(var(--calculator-operator))] data-[state=active]:text-white data-[state=inactive]:text-[hsl(var(--calculator-text))] flex items-center justify-center gap-1 sm:gap-2 px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm"
                   >
                     {getModeIcon(mode.mode_key)}
                     <span className="hidden md:inline">{mode.mode_name}</span>

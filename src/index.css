@@ -46,8 +46,8 @@ All colors MUST be HSL.
     --calculator-button-hover: 35 30% 42%;
     --calculator-button-start: 35 40% 45%;
     --calculator-button-end: 35 40% 38%;
-    --calculator-operator: 30 85% 50%;
-    --calculator-operator-hover: 30 85% 58%;
+    --calculator-operator: 30 85% 38%;
+    --calculator-operator-hover: 30 85% 45%;
     --calculator-operator-glow: 30 95% 60%;
     --calculator-special: 45 90% 55%;
     --calculator-special-hover: 45 90% 62%;
@@ -114,8 +114,8 @@ All colors MUST be HSL.
     --calculator-button-hover: 35 30% 42%;
     --calculator-button-start: 35 40% 45%;
     --calculator-button-end: 35 40% 38%;
-    --calculator-operator: 30 85% 50%;
-    --calculator-operator-hover: 30 85% 58%;
+    --calculator-operator: 30 85% 38%;
+    --calculator-operator-hover: 30 85% 45%;
     --calculator-operator-glow: 30 95% 60%;
     --calculator-special: 45 90% 55%;
     --calculator-special-hover: 45 90% 62%;

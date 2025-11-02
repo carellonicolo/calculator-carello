@@ -41,7 +41,7 @@ const Index = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[hsl(35,45%,96%)] via-[hsl(40,50%,92%)] to-[hsl(30,50%,88%)]">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[hsl(35,45%,96%)] via-[hsl(40,50%,92%)] to-[hsl(30,50%,88%)]">
       {/* Animated gradient orbs */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-3xl animate-pulse" 
            style={{ animation: "float 20s ease-in-out infinite", willChange: "transform", transform: "translateZ(0)" }} />
@@ -94,7 +94,7 @@ const Index = () => {
         onOpenChange={setHelpModalOpen}
         defaultTab="students"
       />
-    </div>
+    </main>
   );
 };
 

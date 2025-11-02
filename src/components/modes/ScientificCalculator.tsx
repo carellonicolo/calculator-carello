@@ -1,16 +1,37 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorDisplay } from "../CalculatorDisplay";
 import { useCalculatorState } from "@/hooks/useCalculatorState";
+import { useKeyboardInput } from "@/hooks/useKeyboardInput";
+import { KeyboardIndicator } from "@/components/KeyboardIndicator";
 import { Badge } from "@/components/ui/badge";
 
 interface ScientificCalculatorProps {
   settings: { [key: string]: boolean };
+  isKeyboardActive?: boolean;
+  onShowShortcuts?: () => void;
 }
 
 export const ScientificCalculator = ({
   settings,
+  isKeyboardActive = true,
+  onShowShortcuts
 }: ScientificCalculatorProps) => {
   const calc = useCalculatorState();
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const handleKeyPress = (key: string) => {
+    setActiveKey(key);
+    setTimeout(() => setActiveKey(null), 150);
+  };
+
+  useKeyboardInput({
+    mode: 'scientific',
+    settings,
+    calc,
+    isActive: isKeyboardActive,
+    onKeyPress: handleKeyPress
+  });
 
   const isEnabled = (key: string) => settings[key] !== false;
 
@@ -20,6 +41,11 @@ export const ScientificCalculator = ({
   const operatorClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-operator))] to-[hsl(var(--calculator-operator))]/80 text-white hover:shadow-glow-lg hover:scale-110 border border-[hsl(var(--calculator-operator-glow))]/30`;
   const specialClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-special))] to-[hsl(var(--calculator-special))]/80 text-white hover:shadow-glow border border-[hsl(var(--calculator-special-shine))]/30`;
   const disabledClass = `${buttonClass} bg-[hsl(var(--calculator-disabled))] text-muted-foreground cursor-not-allowed opacity-50`;
+  const activeClass = `ring-2 ring-primary scale-95`;
+
+  const getButtonClass = (baseClass: string, key: string) => {
+    return `${baseClass} ${activeKey === key ? activeClass : ''}`;
+  };
 
   return (
     <div className="space-y-4">
@@ -29,6 +55,8 @@ export const ScientificCalculator = ({
         operation={calc.operation}
         isAnimating={calc.isAnimating}
       />
+      
+      {onShowShortcuts && <KeyboardIndicator onClick={onShowShortcuts} />}
 
       {/* Angle Mode Indicator */}
       {isEnabled("deg_rad") && (

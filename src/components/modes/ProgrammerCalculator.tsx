@@ -1,16 +1,37 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorDisplay } from "../CalculatorDisplay";
 import { useCalculatorState, WordSize, BaseMode } from "@/hooks/useCalculatorState";
+import { useKeyboardInput } from "@/hooks/useKeyboardInput";
+import { KeyboardIndicator } from "@/components/KeyboardIndicator";
 import { Badge } from "@/components/ui/badge";
 
 interface ProgrammerCalculatorProps {
   settings: { [key: string]: boolean };
+  isKeyboardActive?: boolean;
+  onShowShortcuts?: () => void;
 }
 
 export const ProgrammerCalculator = ({
   settings,
+  isKeyboardActive = true,
+  onShowShortcuts
 }: ProgrammerCalculatorProps) => {
   const calc = useCalculatorState();
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const handleKeyPress = (key: string) => {
+    setActiveKey(key);
+    setTimeout(() => setActiveKey(null), 150);
+  };
+
+  useKeyboardInput({
+    mode: 'programmer',
+    settings,
+    calc,
+    isActive: isKeyboardActive,
+    onKeyPress: handleKeyPress
+  });
 
   const isEnabled = (key: string) => settings[key] !== false;
 
@@ -21,6 +42,11 @@ export const ProgrammerCalculator = ({
   const specialClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-special))] to-[hsl(var(--calculator-special))]/80 text-white hover:shadow-glow border border-[hsl(var(--calculator-special-shine))]/30`;
   const bitwiseClass = `${buttonClass} bg-gradient-to-br from-cyan-600 to-cyan-700 text-white hover:shadow-glow border border-cyan-400/30`;
   const disabledClass = `${buttonClass} bg-[hsl(var(--calculator-disabled))] text-muted-foreground cursor-not-allowed opacity-50`;
+  const activeClass = `ring-2 ring-primary scale-95`;
+
+  const getButtonClass = (baseClass: string, key: string) => {
+    return `${baseClass} ${activeKey === key ? activeClass : ''}`;
+  };
 
   const hexDigits = ["A", "B", "C", "D", "E", "F"];
   const isHexDigitEnabled = calc.baseMode === 16;
@@ -35,6 +61,8 @@ export const ProgrammerCalculator = ({
         isProgrammerMode={true}
         baseMode={calc.baseMode}
       />
+      
+      {onShowShortcuts && <KeyboardIndicator onClick={onShowShortcuts} />}
 
       {/* Word Size & Base Mode Indicators */}
       <div className="flex flex-wrap gap-2 justify-between">

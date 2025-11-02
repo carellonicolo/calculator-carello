@@ -1,13 +1,36 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorDisplay } from "../CalculatorDisplay";
 import { useCalculatorState } from "@/hooks/useCalculatorState";
+import { useKeyboardInput } from "@/hooks/useKeyboardInput";
+import { KeyboardIndicator } from "@/components/KeyboardIndicator";
 
 interface StandardCalculatorProps {
   settings: { [key: string]: boolean };
+  isKeyboardActive?: boolean;
+  onShowShortcuts?: () => void;
 }
 
-export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
+export const StandardCalculator = ({ 
+  settings, 
+  isKeyboardActive = true,
+  onShowShortcuts 
+}: StandardCalculatorProps) => {
   const calc = useCalculatorState();
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const handleKeyPress = (key: string) => {
+    setActiveKey(key);
+    setTimeout(() => setActiveKey(null), 150);
+  };
+
+  useKeyboardInput({
+    mode: 'standard',
+    settings,
+    calc,
+    isActive: isKeyboardActive,
+    onKeyPress: handleKeyPress
+  });
 
   const isEnabled = (key: string) => settings[key] !== false;
 
@@ -18,6 +41,11 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
   const specialClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-special))] to-[hsl(var(--calculator-special))]/80 text-white hover:shadow-glow border border-[hsl(var(--calculator-special-shine))]/30`;
   const memoryClass = `${buttonClass} bg-gradient-to-br from-purple-600 to-purple-700 text-white hover:shadow-glow border border-purple-400/30`;
   const disabledClass = `${buttonClass} bg-[hsl(var(--calculator-disabled))] text-muted-foreground cursor-not-allowed opacity-50`;
+  const activeClass = `ring-2 ring-primary scale-95`;
+
+  const getButtonClass = (baseClass: string, key: string) => {
+    return `${baseClass} ${activeKey === key ? activeClass : ''}`;
+  };
 
   return (
     <div className="space-y-4">
@@ -27,6 +55,8 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
         operation={calc.operation}
         isAnimating={calc.isAnimating}
       />
+      
+      {onShowShortcuts && <KeyboardIndicator onClick={onShowShortcuts} />}
 
       <div className="space-y-3">
         {/* Memory Row */}
@@ -103,13 +133,13 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
 
         {/* Row 3: 7, 8, 9, × */}
         <div className="grid grid-cols-4 gap-3">
-          <Button onClick={() => calc.inputDigit("7")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("7")} className={getButtonClass(numberClass, '7')}>
             7
           </Button>
-          <Button onClick={() => calc.inputDigit("8")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("8")} className={getButtonClass(numberClass, '8')}>
             8
           </Button>
-          <Button onClick={() => calc.inputDigit("9")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("9")} className={getButtonClass(numberClass, '9')}>
             9
           </Button>
           <Button
@@ -122,13 +152,13 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
 
         {/* Row 4: 4, 5, 6, − */}
         <div className="grid grid-cols-4 gap-3">
-          <Button onClick={() => calc.inputDigit("4")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("4")} className={getButtonClass(numberClass, '4')}>
             4
           </Button>
-          <Button onClick={() => calc.inputDigit("5")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("5")} className={getButtonClass(numberClass, '5')}>
             5
           </Button>
-          <Button onClick={() => calc.inputDigit("6")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("6")} className={getButtonClass(numberClass, '6')}>
             6
           </Button>
           <Button
@@ -141,13 +171,13 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
 
         {/* Row 5: 1, 2, 3, + */}
         <div className="grid grid-cols-4 gap-3">
-          <Button onClick={() => calc.inputDigit("1")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("1")} className={getButtonClass(numberClass, '1')}>
             1
           </Button>
-          <Button onClick={() => calc.inputDigit("2")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("2")} className={getButtonClass(numberClass, '2')}>
             2
           </Button>
-          <Button onClick={() => calc.inputDigit("3")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("3")} className={getButtonClass(numberClass, '3')}>
             3
           </Button>
           <Button
@@ -160,13 +190,13 @@ export const StandardCalculator = ({ settings }: StandardCalculatorProps) => {
 
         {/* Row 6: +/-, 0, ., = */}
         <div className="grid grid-cols-4 gap-3">
-          <Button onClick={calc.toggleSign} className={numberClass}>
+          <Button onClick={calc.toggleSign} className={getButtonClass(numberClass, '+/-')}>
             +/−
           </Button>
-          <Button onClick={() => calc.inputDigit("0")} className={numberClass}>
+          <Button onClick={() => calc.inputDigit("0")} className={getButtonClass(numberClass, '0')}>
             0
           </Button>
-          <Button onClick={calc.inputDecimal} className={numberClass}>
+          <Button onClick={calc.inputDecimal} className={getButtonClass(numberClass, '.')}>
             .
           </Button>
           <Button

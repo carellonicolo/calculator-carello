@@ -6,6 +6,7 @@ import { AlertCircle, Calculator as CalcIcon, Atom, Code } from "lucide-react";
 import { StandardCalculator } from "./modes/StandardCalculator";
 import { ScientificCalculator } from "./modes/ScientificCalculator";
 import { ProgrammerCalculator } from "./modes/ProgrammerCalculator";
+import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 import { createSilentRealtimeChannel } from "@/lib/realtimeErrorHandler";
 
 type CalculatorSettings = {
@@ -48,6 +49,21 @@ export const Calculator = () => {
   const [currentMode, setCurrentMode] = useState<string>("standard");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isKeyboardActive, setIsKeyboardActive] = useState(true);
+
+  // Listen for "?" key to show shortcuts modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === '?' || (e.shiftKey && e.key === '/')) && !showShortcuts) {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showShortcuts]);
 
   useEffect(() => {
     const initCalculator = async () => {
@@ -257,13 +273,25 @@ export const Calculator = () => {
             // If only one mode is enabled, show it directly without tabs
             <div>
               {enabledModes[0].mode_key === "standard" && (
-                <StandardCalculator settings={settings} />
+                <StandardCalculator 
+                  settings={settings} 
+                  isKeyboardActive={isKeyboardActive}
+                  onShowShortcuts={() => setShowShortcuts(true)}
+                />
               )}
               {enabledModes[0].mode_key === "scientific" && (
-                <ScientificCalculator settings={settings} />
+                <ScientificCalculator 
+                  settings={settings}
+                  isKeyboardActive={isKeyboardActive}
+                  onShowShortcuts={() => setShowShortcuts(true)}
+                />
               )}
               {enabledModes[0].mode_key === "programmer" && (
-                <ProgrammerCalculator settings={settings} />
+                <ProgrammerCalculator 
+                  settings={settings}
+                  isKeyboardActive={isKeyboardActive}
+                  onShowShortcuts={() => setShowShortcuts(true)}
+                />
               )}
             </div>
           ) : (
@@ -291,19 +319,37 @@ export const Calculator = () => {
               {enabledModes.map((mode) => (
                 <TabsContent key={mode.mode_key} value={mode.mode_key}>
                   {mode.mode_key === "standard" && (
-                    <StandardCalculator settings={settings} />
+                    <StandardCalculator 
+                      settings={settings}
+                      isKeyboardActive={isKeyboardActive}
+                      onShowShortcuts={() => setShowShortcuts(true)}
+                    />
                   )}
                   {mode.mode_key === "scientific" && (
-                    <ScientificCalculator settings={settings} />
+                    <ScientificCalculator 
+                      settings={settings}
+                      isKeyboardActive={isKeyboardActive}
+                      onShowShortcuts={() => setShowShortcuts(true)}
+                    />
                   )}
                   {mode.mode_key === "programmer" && (
-                    <ProgrammerCalculator settings={settings} />
+                    <ProgrammerCalculator 
+                      settings={settings}
+                      isKeyboardActive={isKeyboardActive}
+                      onShowShortcuts={() => setShowShortcuts(true)}
+                    />
                   )}
                 </TabsContent>
               ))}
             </Tabs>
           )}
         </div>
+
+        <KeyboardShortcutsModal
+          open={showShortcuts}
+          onOpenChange={setShowShortcuts}
+          currentMode={currentMode}
+        />
       </Card>
     </div>
   );

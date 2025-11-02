@@ -58,6 +58,7 @@ const Index = () => {
       <Button
         onClick={() => setHelpModalOpen(true)}
         className="fixed top-6 left-6 z-50 px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group"
+        aria-label="Apri guida - Informazioni su come usare la calcolatrice"
       >
         <HelpCircle className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
         <span className="text-foreground font-medium hidden sm:inline">Guida</span>

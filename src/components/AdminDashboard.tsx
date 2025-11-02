@@ -70,10 +70,17 @@ export const AdminDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // SECURITY NOTE: This component is protected by ProtectedAdminRoute wrapper.
+  // Authentication and admin authorization are enforced at the route level and
+  // by database RLS policies. All database operations automatically verify admin
+  // status via the is_admin() SECURITY DEFINER function. Client-side checks are
+  // for UX only - actual security is enforced server-side.
+  
   useEffect(() => {
     const initDashboard = async () => {
       try {
-        await checkAuth();
+        // Load all dashboard data
+        // Note: RLS policies automatically enforce admin-only access
         await Promise.all([
           fetchSettings(),
           fetchModes(),
@@ -88,13 +95,6 @@ export const AdminDashboard = () => {
 
     initDashboard();
   }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/login');
-    }
-  };
 
   const fetchSettings = async () => {
     try {

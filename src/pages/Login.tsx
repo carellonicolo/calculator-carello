@@ -7,6 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, ArrowLeft } from "lucide-react";
+import { z } from "zod";
+
+// Input validation schema for login form
+const loginSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, { message: "Email richiesta" })
+    .email({ message: "Formato email non valido" })
+    .max(255, { message: "Email troppo lunga" }),
+  password: z.string()
+    .min(6, { message: "Password deve essere di almeno 6 caratteri" })
+    .max(72, { message: "Password troppo lunga" })
+});
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -19,9 +32,26 @@ export const Login = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate inputs before making API call
+    const validationResult = loginSchema.safeParse({
+      email: email.trim(),
+      password
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Errore di validazione",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: validationResult.data.email,
+      password: validationResult.data.password,
     });
 
     if (error) {

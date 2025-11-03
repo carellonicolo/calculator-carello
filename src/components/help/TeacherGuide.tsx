@@ -279,9 +279,9 @@ export const TeacherGuide = () => {
           </p>
           <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
             <p className="text-sm text-green-900 dark:text-green-100">
-              <strong>Come funziona:</strong> Il sistema utilizza Supabase Realtime per sincronizzare istantaneamente 
-              le impostazioni. Quando cambi una configurazione, tutti i client connessi ricevono l'aggiornamento 
-              in millisecondi e adattano l'interfaccia di conseguenza.
+              <strong>Come funziona:</strong> Il sistema verifica automaticamente ogni 30 secondi se ci sono aggiornamenti 
+              alle impostazioni. Quando cambi una configurazione, tutti i client riceveranno l'aggiornamento 
+              entro 30 secondi e adatteranno l'interfaccia di conseguenza.
             </p>
           </div>
         </CardContent>

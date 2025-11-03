@@ -129,6 +129,11 @@ export const CalculatorDisplay = ({
       >
         {display}
       </div>
+
+      {/* Branding */}
+      <div className="absolute bottom-2 left-2 text-[10px] sm:text-xs font-medium text-[hsl(var(--calculator-text))]/30 hover:text-[hsl(var(--calculator-text))]/60 transition-colors duration-300">
+        Powered by Prof. Carello
+      </div>
     </div>
   );
 };

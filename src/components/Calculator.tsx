@@ -8,6 +8,7 @@ import { ScientificCalculator } from "./modes/ScientificCalculator";
 import { ProgrammerCalculator } from "./modes/ProgrammerCalculator";
 import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 import { createSilentRealtimeChannel } from "@/lib/realtimeErrorHandler";
+import { isRealtimeAvailable } from "@/lib/realtimeHealthCheck";
 
 type CalculatorSettings = {
   [key: string]: boolean;
@@ -83,58 +84,85 @@ export const Calculator = () => {
 
     initCalculator();
 
-    // Subscribe to real-time changes with silent error handling
-    const settingsChannel = createSilentRealtimeChannel(
-      supabase
-        .channel("calculator_settings_changes")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "calculator_settings" },
-          () => {
-            fetchSettings();
-          }
-        )
-    );
-    settingsChannel.subscribe();
+    // Setup realtime subscriptions with health check
+    const setupRealtimeSubscriptions = async () => {
+      // Check if realtime is available to prevent WebSocket errors
+      const realtimeHealthy = await isRealtimeAvailable();
+      
+      if (!realtimeHealthy) {
+        console.info('Realtime not available, using polling fallback');
+        // Set up polling as fallback (every 30 seconds)
+        const pollInterval = setInterval(() => {
+          fetchSettings();
+          fetchGlobalSettings();
+          fetchModes();
+        }, 30000);
+        
+        return () => clearInterval(pollInterval);
+      }
 
-    const globalChannel = createSilentRealtimeChannel(
-      supabase
-        .channel("global_settings_changes")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "global_settings" },
-          () => {
-            fetchGlobalSettings();
-          }
-        )
-    );
-    globalChannel.subscribe();
-
-    // Try to subscribe to modes changes, but don't fail if table doesn't exist
-    let modesChannel;
-    try {
-      modesChannel = createSilentRealtimeChannel(
+      // Subscribe to real-time changes with silent error handling
+      const settingsChannel = createSilentRealtimeChannel(
         supabase
-          .channel("calculator_modes_changes")
+          .channel("calculator_settings_changes")
           .on(
             "postgres_changes",
-            { event: "*", schema: "public", table: "calculator_modes" },
+            { event: "*", schema: "public", table: "calculator_settings" },
             () => {
-              fetchModes();
+              fetchSettings();
             }
           )
       );
-      modesChannel.subscribe();
-    } catch (err) {
-      // Silently ignore if modes table not available
-    }
+      settingsChannel.subscribe();
+
+      const globalChannel = createSilentRealtimeChannel(
+        supabase
+          .channel("global_settings_changes")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "global_settings" },
+            () => {
+              fetchGlobalSettings();
+            }
+          )
+      );
+      globalChannel.subscribe();
+
+      // Try to subscribe to modes changes, but don't fail if table doesn't exist
+      let modesChannel;
+      try {
+        modesChannel = createSilentRealtimeChannel(
+          supabase
+            .channel("calculator_modes_changes")
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "calculator_modes" },
+              () => {
+                fetchModes();
+              }
+            )
+        );
+        modesChannel.subscribe();
+      } catch (err) {
+        // Silently ignore if modes table not available
+      }
+
+      return () => {
+        supabase.removeChannel(settingsChannel);
+        supabase.removeChannel(globalChannel);
+        if (modesChannel) {
+          supabase.removeChannel(modesChannel);
+        }
+      };
+    };
+
+    let cleanup: (() => void) | undefined;
+    setupRealtimeSubscriptions().then(cleanupFn => {
+      cleanup = cleanupFn;
+    });
 
     return () => {
-      supabase.removeChannel(settingsChannel);
-      supabase.removeChannel(globalChannel);
-      if (modesChannel) {
-        supabase.removeChannel(modesChannel);
-      }
+      if (cleanup) cleanup();
     };
   }, []);
 

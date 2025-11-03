@@ -57,7 +57,7 @@ const Index = () => {
       {/* Floating Help Button */}
       <Button
         onClick={() => setHelpModalOpen(true)}
-        className="fixed bottom-20 right-6 sm:top-6 sm:right-6 sm:bottom-auto z-50 px-3 py-3 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group min-w-[44px] min-h-[44px]"
+        className="fixed bottom-20 right-6 sm:top-6 sm:right-6 sm:bottom-auto z-50 px-3 py-3 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group min-w-[44px] min-h-[44px] border-primary/50 bg-primary/10"
         aria-label="Apri guida - Informazioni su come usare la calcolatrice"
       >
         <HelpCircle className="h-5 w-5 sm:mr-2 text-primary group-hover:text-accent transition-colors" />

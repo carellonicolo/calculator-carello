@@ -57,10 +57,10 @@ const Index = () => {
       {/* Floating Help Button */}
       <Button
         onClick={() => setHelpModalOpen(true)}
-        className="fixed top-6 left-6 z-50 px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group"
+        className="fixed bottom-6 left-6 sm:top-6 sm:bottom-auto z-50 px-3 py-3 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group min-w-[44px] min-h-[44px]"
         aria-label="Apri guida - Informazioni su come usare la calcolatrice"
       >
-        <HelpCircle className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+        <HelpCircle className="h-5 w-5 sm:mr-2 text-primary group-hover:text-accent transition-colors" />
         <span className="text-foreground font-medium hidden sm:inline">Guida</span>
       </Button>
       
@@ -68,18 +68,18 @@ const Index = () => {
       <Button
         onClick={handleAdminClick}
         disabled={loading}
-        className={`fixed top-6 right-6 z-50 px-4 py-2 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group ${
+        className={`fixed bottom-6 right-6 sm:top-6 sm:bottom-auto z-50 px-3 py-3 sm:px-4 sm:py-2 login-button-float bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:shadow-glow transition-all duration-300 group min-w-[44px] min-h-[44px] ${
           isAdmin ? 'border-primary/50 bg-primary/10' : ''
         }`}
       >
         {loading ? (
-          <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="h-5 w-5 sm:mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         ) : isAdmin ? (
-          <Shield className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+          <Shield className="h-5 w-5 sm:mr-2 text-primary group-hover:text-accent transition-colors" />
         ) : (
-          <Lock className="mr-2 h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+          <Lock className="h-5 w-5 sm:mr-2 text-primary group-hover:text-accent transition-colors" />
         )}
-        <span className="text-foreground font-medium">
+        <span className="text-foreground font-medium hidden sm:inline">
           {isAdmin ? 'Dashboard' : 'Admin'}
         </span>
       </Button>

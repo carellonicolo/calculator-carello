@@ -243,7 +243,7 @@ export const Calculator = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 pt-20 sm:pt-4 pb-24 sm:pb-4">
       <Card className="w-full max-w-2xl p-3 sm:p-6 bg-[hsl(var(--calculator-bg))]/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl relative overflow-hidden animate-slide-in-up">
         {/* Animated border glow */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 animate-pulse opacity-50 pointer-events-none" />

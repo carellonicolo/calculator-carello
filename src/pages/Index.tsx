@@ -89,30 +89,6 @@ const Index = () => {
         <Calculator />
       </div>
 
-      {/* Footer with contact information - optimized for LCP */}
-      <footer className="fixed bottom-20 sm:bottom-2 left-1/2 -translate-x-1/2 z-40 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full shadow-lg max-w-[calc(100vw-1rem)] opacity-0 animate-fade-in [animation-delay:100ms] [animation-fill-mode:forwards]">
-        <p className="text-xs sm:text-sm text-foreground/70 text-center">
-          Sviluppato da{' '}
-          <a 
-            href="https://apps.nicolocarello.it"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-primary hover:text-accent transition-colors"
-            aria-label="Visita il sito di Prof. Nicolò Carello"
-          >
-            Prof. Nicolò Carello
-          </a>
-          {' '} • {' '}
-          <a 
-            href="mailto:info@nicolocarello.it" 
-            className="text-primary hover:text-accent transition-colors underline decoration-primary/30 hover:decoration-accent"
-            aria-label="Contatta via email per problemi o supporto"
-          >
-            info@nicolocarello.it
-          </a>
-        </p>
-      </footer>
-
       {/* Help Modal */}
       <HelpModal 
         open={helpModalOpen} 

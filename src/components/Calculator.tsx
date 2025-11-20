@@ -308,6 +308,28 @@ export const Calculator = () => {
           onOpenChange={setShowShortcuts}
           currentMode={currentMode}
         />
+        
+        {/* Footer with contact information */}
+        <footer className="mt-6 pt-4 border-t border-border/20">
+          <p className="text-xs text-muted-foreground text-center">
+            Sviluppato da{' '}
+            <a 
+              href="https://www.nicolocarello.it" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
+              Prof. Nicolò Carello
+            </a>
+            {' • '}
+            <a 
+              href="mailto:info@nicolocarello.it"
+              className="hover:text-primary transition-colors"
+            >
+              info@nicolocarello.it
+            </a>
+          </p>
+        </footer>
       </Card>
     </div>
   );

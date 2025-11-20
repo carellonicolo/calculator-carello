@@ -136,7 +136,6 @@ export const CalculatorDisplay = ({
         target="_blank"
         rel="noopener noreferrer"
         className="absolute bottom-2 left-2 text-[10px] sm:text-xs font-medium text-[hsl(var(--calculator-text))]/30 hover:text-[hsl(var(--calculator-text))]/60 transition-colors duration-300 cursor-pointer"
-        aria-label="Visita apps.nicolocarello.it"
       >
         Powered by Prof. Carello
       </a>

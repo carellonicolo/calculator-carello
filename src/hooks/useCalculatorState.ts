@@ -189,7 +189,7 @@ export const useCalculatorState = () => {
   };
 
   const performUnaryOperation = (op: string) => {
-    let value = parseFloat(display);
+    const value = parseFloat(display);
     let result = 0;
 
     switch (op) {
@@ -234,7 +234,7 @@ export const useCalculatorState = () => {
   };
 
   const performTrigonometric = (func: string) => {
-    let value = parseFloat(display);
+    const value = parseFloat(display);
     let result = 0;
 
     // Convert to radians if in degree mode

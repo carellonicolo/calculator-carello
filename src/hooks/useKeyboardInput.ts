@@ -20,9 +20,9 @@ export const useKeyboardInput = ({
   const lastKeyPressRef = useRef<string>('');
   const lastKeyTimeRef = useRef<number>(0);
 
-  const isEnabled = (key: string) => {
+  const isEnabled = useCallback((key: string) => {
     return settings[key] !== false;
-  };
+  }, [settings]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!isActive) return;

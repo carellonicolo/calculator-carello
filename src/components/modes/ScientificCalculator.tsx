@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorDisplay } from "../CalculatorDisplay";
 import { useCalculatorState } from "@/hooks/useCalculatorState";
@@ -19,11 +19,26 @@ export const ScientificCalculator = ({
 }: ScientificCalculatorProps) => {
   const calc = useCalculatorState();
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleKeyPress = (key: string) => {
+    // Clear previous timeout if exists
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     setActiveKey(key);
-    setTimeout(() => setActiveKey(null), 150);
+    timeoutRef.current = setTimeout(() => setActiveKey(null), 150);
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   useKeyboardInput({
     mode: 'scientific',

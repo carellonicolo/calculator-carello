@@ -1,12 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, Calculator as CalcIcon, Atom, Code } from "lucide-react";
-import { StandardCalculator } from "./modes/StandardCalculator";
-import { ScientificCalculator } from "./modes/ScientificCalculator";
-import { ProgrammerCalculator } from "./modes/ProgrammerCalculator";
 import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
+
+// Lazy load calculator modes for code splitting
+const StandardCalculator = lazy(() => import("./modes/StandardCalculator").then(m => ({ default: m.StandardCalculator })));
+const ScientificCalculator = lazy(() => import("./modes/ScientificCalculator").then(m => ({ default: m.ScientificCalculator })));
+const ProgrammerCalculator = lazy(() => import("./modes/ProgrammerCalculator").then(m => ({ default: m.ProgrammerCalculator })));
+
+// Loading component for calculator modes
+const CalculatorLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-2 text-sm text-muted-foreground">Caricamento calcolatrice...</p>
+    </div>
+  </div>
+);
 
 type CalculatorSettings = {
   [key: string]: boolean;
@@ -65,6 +77,8 @@ export const Calculator = () => {
   }, [showShortcuts]);
 
   useEffect(() => {
+    let fallbackPollInterval: NodeJS.Timeout | null = null;
+
     const initCalculator = async () => {
       try {
         await Promise.all([
@@ -82,16 +96,64 @@ export const Calculator = () => {
 
     initCalculator();
 
-    // Use polling instead of realtime to prevent WebSocket errors that affect SEO
-    // Poll every 30 seconds for settings updates
-    const pollInterval = setInterval(() => {
-      fetchSettings();
-      fetchGlobalSettings();
-      fetchModes();
-    }, 30000);
+    // Subscribe to realtime changes with proper error handling
+    const settingsChannel = supabase
+      .channel('calculator-settings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calculator_settings',
+        },
+        () => {
+          fetchSettings();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'global_settings',
+        },
+        () => {
+          fetchGlobalSettings();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calculator_modes',
+        },
+        () => {
+          fetchModes();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime connection established');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('Realtime connection failed, falling back to polling:', err);
+          // Fallback to polling if realtime fails
+          fallbackPollInterval = setInterval(() => {
+            fetchSettings();
+            fetchGlobalSettings();
+            fetchModes();
+          }, 30000);
+        }
+      });
 
     return () => {
-      clearInterval(pollInterval);
+      // Cleanup realtime subscription
+      supabase.removeChannel(settingsChannel);
+
+      // Cleanup polling interval if it exists
+      if (fallbackPollInterval) {
+        clearInterval(fallbackPollInterval);
+      }
     };
   }, []);
 
@@ -228,29 +290,31 @@ export const Calculator = () => {
             </div>
           ) : enabledModes.length === 1 ? (
             // If only one mode is enabled, show it directly without tabs
-            <div>
-              {enabledModes[0].mode_key === "standard" && (
-                <StandardCalculator 
-                  settings={settings} 
-                  isKeyboardActive={isKeyboardActive}
-                  onShowShortcuts={() => setShowShortcuts(true)}
-                />
-              )}
-              {enabledModes[0].mode_key === "scientific" && (
-                <ScientificCalculator 
-                  settings={settings}
-                  isKeyboardActive={isKeyboardActive}
-                  onShowShortcuts={() => setShowShortcuts(true)}
-                />
-              )}
-              {enabledModes[0].mode_key === "programmer" && (
-                <ProgrammerCalculator 
-                  settings={settings}
-                  isKeyboardActive={isKeyboardActive}
-                  onShowShortcuts={() => setShowShortcuts(true)}
-                />
-              )}
-            </div>
+            <Suspense fallback={<CalculatorLoader />}>
+              <div>
+                {enabledModes[0].mode_key === "standard" && (
+                  <StandardCalculator
+                    settings={settings}
+                    isKeyboardActive={isKeyboardActive}
+                    onShowShortcuts={() => setShowShortcuts(true)}
+                  />
+                )}
+                {enabledModes[0].mode_key === "scientific" && (
+                  <ScientificCalculator
+                    settings={settings}
+                    isKeyboardActive={isKeyboardActive}
+                    onShowShortcuts={() => setShowShortcuts(true)}
+                  />
+                )}
+                {enabledModes[0].mode_key === "programmer" && (
+                  <ProgrammerCalculator
+                    settings={settings}
+                    isKeyboardActive={isKeyboardActive}
+                    onShowShortcuts={() => setShowShortcuts(true)}
+                  />
+                )}
+              </div>
+            </Suspense>
           ) : (
             // Multiple modes enabled, show tabs
             <Tabs value={currentMode} onValueChange={setCurrentMode}>
@@ -276,27 +340,29 @@ export const Calculator = () => {
 
               {enabledModes.map((mode) => (
                 <TabsContent key={mode.mode_key} value={mode.mode_key}>
-                  {mode.mode_key === "standard" && (
-                    <StandardCalculator 
-                      settings={settings}
-                      isKeyboardActive={isKeyboardActive}
-                      onShowShortcuts={() => setShowShortcuts(true)}
-                    />
-                  )}
-                  {mode.mode_key === "scientific" && (
-                    <ScientificCalculator 
-                      settings={settings}
-                      isKeyboardActive={isKeyboardActive}
-                      onShowShortcuts={() => setShowShortcuts(true)}
-                    />
-                  )}
-                  {mode.mode_key === "programmer" && (
-                    <ProgrammerCalculator 
-                      settings={settings}
-                      isKeyboardActive={isKeyboardActive}
-                      onShowShortcuts={() => setShowShortcuts(true)}
-                    />
-                  )}
+                  <Suspense fallback={<CalculatorLoader />}>
+                    {mode.mode_key === "standard" && (
+                      <StandardCalculator
+                        settings={settings}
+                        isKeyboardActive={isKeyboardActive}
+                        onShowShortcuts={() => setShowShortcuts(true)}
+                      />
+                    )}
+                    {mode.mode_key === "scientific" && (
+                      <ScientificCalculator
+                        settings={settings}
+                        isKeyboardActive={isKeyboardActive}
+                        onShowShortcuts={() => setShowShortcuts(true)}
+                      />
+                    )}
+                    {mode.mode_key === "programmer" && (
+                      <ProgrammerCalculator
+                        settings={settings}
+                        isKeyboardActive={isKeyboardActive}
+                        onShowShortcuts={() => setShowShortcuts(true)}
+                      />
+                    )}
+                  </Suspense>
                 </TabsContent>
               ))}
             </Tabs>

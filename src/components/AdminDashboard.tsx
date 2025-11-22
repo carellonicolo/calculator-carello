@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -94,9 +94,9 @@ export const AdminDashboard = () => {
     };
 
     initDashboard();
-  }, []);
+  }, [fetchSettings, fetchModes, fetchGlobalSettings]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('calculator_settings')
@@ -122,9 +122,9 @@ export const AdminDashboard = () => {
     } catch (err) {
       console.error("Exception fetching settings:", err);
     }
-  };
+  }, [toast]);
 
-  const fetchModes = async () => {
+  const fetchModes = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('calculator_modes')
@@ -148,9 +148,9 @@ export const AdminDashboard = () => {
       setModes(DEFAULT_MODES);
       setModesTableExists(false);
     }
-  };
+  }, []);
 
-  const fetchGlobalSettings = async () => {
+  const fetchGlobalSettings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('global_settings')
@@ -166,7 +166,7 @@ export const AdminDashboard = () => {
     } catch (err) {
       console.error('Exception fetching global settings:', err);
     }
-  };
+  }, []);
 
   const toggleSetting = async (id: string, currentValue: boolean) => {
     const { error } = await supabase

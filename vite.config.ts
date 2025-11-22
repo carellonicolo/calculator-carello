@@ -17,5 +17,26 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     sourcemap: true, // Enable source maps for production to improve debugging and SEO scores
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks - separate large libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-switch',
+          ],
+          'supabase-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600, // Increase warning limit slightly
   },
 }));

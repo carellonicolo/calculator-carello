@@ -7,10 +7,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedAdminRoute } from "@/components/ProtectedAdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-// Lazy load routes for code splitting
+// Eager load critical auth pages (faster for user experience)
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+
+// Lazy load non-critical pages
 const Index = lazy(() => import("./pages/Index"));
-const Login = lazy(() => import("./pages/Login"));
-const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const TestErrorBoundary = lazy(() => import("./pages/TestErrorBoundary"));
 

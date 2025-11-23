@@ -75,27 +75,8 @@ export const AdminDashboard = () => {
   // by database RLS policies. All database operations automatically verify admin
   // status via the is_admin() SECURITY DEFINER function. Client-side checks are
   // for UX only - actual security is enforced server-side.
-  
-  useEffect(() => {
-    const initDashboard = async () => {
-      try {
-        // Load all dashboard data
-        // Note: RLS policies automatically enforce admin-only access
-        await Promise.all([
-          fetchSettings(),
-          fetchModes(),
-          fetchGlobalSettings(),
-        ]);
-      } catch (err) {
-        console.error("Error initializing dashboard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    initDashboard();
-  }, [fetchSettings, fetchModes, fetchGlobalSettings]);
-
+  // Define fetch functions BEFORE useEffect to avoid ReferenceError
   const fetchSettings = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -167,6 +148,26 @@ export const AdminDashboard = () => {
       console.error('Exception fetching global settings:', err);
     }
   }, []);
+
+  useEffect(() => {
+    const initDashboard = async () => {
+      try {
+        // Load all dashboard data
+        // Note: RLS policies automatically enforce admin-only access
+        await Promise.all([
+          fetchSettings(),
+          fetchModes(),
+          fetchGlobalSettings(),
+        ]);
+      } catch (err) {
+        console.error("Error initializing dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initDashboard();
+  }, [fetchSettings, fetchModes, fetchGlobalSettings]);
 
   const toggleSetting = async (id: string, currentValue: boolean) => {
     const { error } = await supabase

@@ -37,24 +37,25 @@ All colors MUST be HSL.
     --ring: 30 90% 55%;
 
     --radius: 0.75rem;
-    
-    --calculator-bg: 25 35% 20%;
-    --calculator-display: 25 30% 16%;
-    --calculator-display-glow: 30 100% 60%;
-    --calculator-display-shadow: 30 100% 70%;
-    --calculator-button: 35 25% 35%;
-    --calculator-button-hover: 35 30% 42%;
-    --calculator-button-start: 35 40% 45%;
-    --calculator-button-end: 35 40% 38%;
-    --calculator-operator: 30 85% 38%;
-    --calculator-operator-hover: 30 85% 45%;
-    --calculator-operator-glow: 30 95% 60%;
-    --calculator-special: 45 90% 55%;
-    --calculator-special-hover: 45 90% 62%;
-    --calculator-special-shine: 45 100% 65%;
-    --calculator-text: 40 50% 98%;
-    --calculator-disabled: 30 15% 30%;
-    --ripple-color: 45 100% 70%;
+
+    /* Dark Mode Premium Calculator - iPhone Style */
+    --calculator-bg: 220 10% 11%;  /* #1C1C1E - Deep dark background */
+    --calculator-display: 220 10% 8%;  /* Deeper black for LCD display */
+    --calculator-display-glow: 195 100% 50%;  /* #00D9FF - Electric blue glow */
+    --calculator-display-shadow: 195 100% 50%;  /* Electric blue shadow */
+    --calculator-button: 220 7% 24%;  /* #3A3A3C - Dark gray buttons */
+    --calculator-button-hover: 220 7% 28%;  /* Lighter on hover */
+    --calculator-button-start: 220 7% 26%;  /* Gradient start */
+    --calculator-button-end: 220 7% 22%;  /* Gradient end - darker */
+    --calculator-operator: 28 100% 52%;  /* #FF9F0A - Vibrant orange for operators */
+    --calculator-operator-hover: 28 100% 60%;  /* Brighter orange on hover */
+    --calculator-operator-glow: 28 100% 60%;  /* Orange glow */
+    --calculator-special: 220 7% 32%;  /* Lighter gray for special functions */
+    --calculator-special-hover: 220 7% 36%;  /* Even lighter on hover */
+    --calculator-special-shine: 220 7% 40%;  /* Shine effect */
+    --calculator-text: 0 0% 98%;  /* Almost white text */
+    --calculator-disabled: 220 7% 20%;  /* Darker gray for disabled */
+    --ripple-color: 28 100% 60%;  /* Orange ripple effect */
     
     --admin-bg: 38 50% 96%;
     --admin-card: 40 50% 98%;
@@ -105,24 +106,25 @@ All colors MUST be HSL.
     --border: 28 20% 25%;
     --input: 28 20% 25%;
     --ring: 30 85% 55%;
-    
-    --calculator-bg: 25 35% 20%;
-    --calculator-display: 25 30% 16%;
-    --calculator-display-glow: 30 100% 60%;
-    --calculator-display-shadow: 30 100% 70%;
-    --calculator-button: 35 25% 35%;
-    --calculator-button-hover: 35 30% 42%;
-    --calculator-button-start: 35 40% 45%;
-    --calculator-button-end: 35 40% 38%;
-    --calculator-operator: 30 85% 38%;
-    --calculator-operator-hover: 30 85% 45%;
-    --calculator-operator-glow: 30 95% 60%;
-    --calculator-special: 45 90% 55%;
-    --calculator-special-hover: 45 90% 62%;
-    --calculator-special-shine: 45 100% 65%;
-    --calculator-text: 40 50% 98%;
-    --calculator-disabled: 30 15% 30%;
-    --ripple-color: 45 100% 70%;
+
+    /* Dark Mode Premium Calculator - Same as light mode for consistency */
+    --calculator-bg: 220 10% 11%;
+    --calculator-display: 220 10% 8%;
+    --calculator-display-glow: 195 100% 50%;
+    --calculator-display-shadow: 195 100% 50%;
+    --calculator-button: 220 7% 24%;
+    --calculator-button-hover: 220 7% 28%;
+    --calculator-button-start: 220 7% 26%;
+    --calculator-button-end: 220 7% 22%;
+    --calculator-operator: 28 100% 52%;
+    --calculator-operator-hover: 28 100% 60%;
+    --calculator-operator-glow: 28 100% 60%;
+    --calculator-special: 220 7% 32%;
+    --calculator-special-hover: 220 7% 36%;
+    --calculator-special-shine: 220 7% 40%;
+    --calculator-text: 0 0% 98%;
+    --calculator-disabled: 220 7% 20%;
+    --ripple-color: 28 100% 60%;
     
     --admin-bg: 25 25% 12%;
     --admin-card: 25 30% 16%;
@@ -185,19 +187,68 @@ All colors MUST be HSL.
     75% { transform: translateX(10px); }
   }
 
+  /* New Advanced Animations */
+  @keyframes flipIn {
+    0% {
+      transform: rotateX(90deg);
+      opacity: 0;
+    }
+    100% {
+      transform: rotateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes lcd-scan {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes cursor-blink {
+    0%, 49% {
+      opacity: 1;
+    }
+    50%, 100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes button-press {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+      transform: scale(0.95);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
   .btn-3d {
     position: relative;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
+    will-change: transform;
   }
 
   .btn-3d:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
   }
 
   .btn-3d:active {
-    transform: translateY(1px) scale(0.98);
+    transform: translateY(2px) scale(0.98);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: button-press 0.15s ease-out;
   }
 
   .btn-3d::before {
@@ -222,7 +273,70 @@ All colors MUST be HSL.
 
   .glow-text {
     text-shadow: 0 0 20px hsl(var(--calculator-display-shadow) / 0.8),
-                 0 0 40px hsl(var(--calculator-display-shadow) / 0.4);
+                 0 0 40px hsl(var(--calculator-display-shadow) / 0.4),
+                 0 0 60px hsl(var(--calculator-display-shadow) / 0.2);
+  }
+
+  /* LCD/LED Display Effects */
+  .lcd-display {
+    position: relative;
+    background: linear-gradient(to bottom,
+      hsl(var(--calculator-display)) 0%,
+      hsl(var(--calculator-display) / 0.95) 100%
+    );
+    border: 3px solid hsl(var(--calculator-display) / 0.5);
+    box-shadow:
+      inset 0 2px 8px rgba(0, 0, 0, 0.8),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.05),
+      0 4px 16px hsl(var(--calculator-display-glow) / 0.2);
+  }
+
+  .lcd-display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 50%,
+      transparent 100%
+    );
+    animation: lcd-scan 4s linear infinite;
+    pointer-events: none;
+  }
+
+  .lcd-display::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+    pointer-events: none;
+  }
+
+  .cursor-blink {
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  .number-flip {
+    animation: flipIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Grain texture for background depth */
+  .grain-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
   }
 
   .login-button-float {
@@ -239,6 +353,71 @@ All colors MUST be HSL.
     }
     50% {
       transform: translateY(-10px);
+    }
+  }
+
+  /* Responsive & Mobile Optimizations */
+  /* Safe area insets for iOS */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
+  /* Landscape mode optimization for small screens */
+  @media (max-height: 600px) and (orientation: landscape) {
+    .calculator-card {
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .calculator-display {
+      min-height: 80px !important;
+      padding: 0.75rem !important;
+    }
+
+    .btn-3d {
+      min-height: 48px !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .btn-3d {
+      border-width: 2px;
+      font-weight: 700;
+    }
+
+    .lcd-display {
+      border-width: 4px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    .btn-3d:hover {
+      transform: none;
+    }
+
+    .lcd-display::before {
+      animation: none;
+    }
+  }
+
+  /* Touch target minimum sizes for mobile */
+  @media (hover: none) and (pointer: coarse) {
+    .btn-3d {
+      min-width: 44px;
+      min-height: 44px;
     }
   }
 }

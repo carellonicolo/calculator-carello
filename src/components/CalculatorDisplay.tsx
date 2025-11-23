@@ -42,16 +42,8 @@ export const CalculatorDisplay = ({
     : null;
 
   return (
-    <div className="relative mb-6 p-6 bg-gradient-to-b from-[hsl(var(--calculator-display))] to-[hsl(var(--calculator-display))]/80 rounded-2xl min-h-[100px] flex flex-col justify-end border-2 border-[hsl(var(--calculator-display-glow))]/20 shadow-inner animate-glow-pulse overflow-hidden z-10">
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage:
-            'linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent)',
-          backgroundSize: '50px 50px',
-        }}
-      />
+    <div className="relative mb-6 p-6 lcd-display rounded-2xl min-h-[120px] sm:min-h-[140px] flex flex-col justify-end overflow-hidden z-10 calculator-display">
+      {/* Grid pattern overlay removed - now handled by .lcd-display */}
 
       {/* Programmer mode: Multi-base display */}
       {isProgrammerMode && multiBase && (
@@ -123,11 +115,16 @@ export const CalculatorDisplay = ({
 
       {/* Main display */}
       <div
-        className={`text-5xl font-mono text-[hsl(var(--calculator-text))] break-all text-right glow-text transition-all duration-300 ${
+        className={`text-4xl sm:text-5xl md:text-6xl font-semibold font-mono text-[hsl(var(--calculator-text))] break-all text-right glow-text transition-all duration-300 number-flip ${
           isAnimating ? 'scale-105' : 'scale-100'
         }`}
+        style={{
+          letterSpacing: '-0.02em',
+          fontFeatureSettings: "'tnum' 1"
+        }}
       >
         {display}
+        {display === '0' && <span className="cursor-blink">|</span>}
       </div>
 
       {/* Branding */}

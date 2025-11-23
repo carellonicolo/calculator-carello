@@ -50,7 +50,7 @@ export const StandardCalculator = ({
   const isEnabled = (key: string) => settings[key] !== false;
 
   const buttonClass =
-    "btn-3d h-16 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg";
+    "btn-3d h-16 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg min-w-[44px]";
   const numberClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-button-start))] to-[hsl(var(--calculator-button-end))] text-[hsl(var(--calculator-text))] hover:shadow-lift border border-white/10`;
   const operatorClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-operator))] to-[hsl(var(--calculator-operator))]/80 text-white hover:shadow-glow-lg hover:scale-110 border border-[hsl(var(--calculator-operator-glow))]/30`;
   const specialClass = `${buttonClass} bg-gradient-to-br from-[hsl(var(--calculator-special))] to-[hsl(var(--calculator-special))]/80 text-white hover:shadow-glow border border-[hsl(var(--calculator-special-shine))]/30`;

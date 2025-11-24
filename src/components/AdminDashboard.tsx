@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { withRetry } from "@/lib/supabaseRetry";
 import { LogOut, Settings, Power, ToggleLeft, ToggleRight, Calculator, Atom, Code, Calculator as CalcIcon, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpModal } from "@/components/HelpModal";
@@ -78,53 +79,69 @@ export const AdminDashboard = () => {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('calculator_settings')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('function_name', { ascending: true });
+      console.log('📊 Fetching settings...');
+      
+      const result = await withRetry(
+        async () => supabase
+          .from('calculator_settings')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('function_name', { ascending: true }),
+        { maxRetries: 3, initialDelay: 1000 }
+      );
 
-      if (error) {
+      if (result.error) {
+        console.error('❌ Error fetching settings:', result.error);
         toast({
-          title: "Errore",
-          description: "Impossibile caricare le impostazioni",
+          title: "Errore di connessione",
+          description: "Impossibile caricare le impostazioni. Riprovo automaticamente...",
           variant: "destructive",
         });
-        console.error(error);
       } else {
-        // Make sure each setting has a mode field, default to 'scientific' if not present
-        const settingsWithMode = (data || []).map(s => ({
+        console.log('✓ Settings loaded successfully');
+        const settingsWithMode = (result.data || []).map(s => ({
           ...s,
           mode: s.mode || 'scientific'
         }));
         setSettings(settingsWithMode);
       }
     } catch (err) {
-      console.error("Exception fetching settings:", err);
+      console.error("❌ Exception fetching settings:", err);
+      toast({
+        title: "Errore grave",
+        description: "Impossibile caricare le impostazioni dopo diversi tentativi",
+        variant: "destructive",
+      });
     }
   }, [toast]);
 
   const fetchModes = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('calculator_modes')
-        .select('*')
-        .order('display_order', { ascending: true });
+      console.log('🎛️ Fetching calculator modes...');
+      
+      const result = await withRetry(
+        async () => supabase
+          .from('calculator_modes')
+          .select('*')
+          .order('display_order', { ascending: true }),
+        { maxRetries: 3, initialDelay: 1000 }
+      );
 
-      if (error) {
-        // Table doesn't exist, use defaults
-        console.log("Modes table not found, using defaults");
+      if (result.error) {
+        console.log("⚠ Modes table not found, using defaults");
         setModes(DEFAULT_MODES);
         setModesTableExists(false);
-      } else if (data && data.length > 0) {
-        setModes(data);
+      } else if (result.data && result.data.length > 0) {
+        console.log('✓ Modes loaded successfully');
+        setModes(result.data);
         setModesTableExists(true);
       } else {
+        console.log('ℹ No modes in database, using defaults');
         setModes(DEFAULT_MODES);
         setModesTableExists(false);
       }
     } catch (err) {
-      console.error("Exception fetching modes:", err);
+      console.error("❌ Exception fetching modes:", err);
       setModes(DEFAULT_MODES);
       setModesTableExists(false);
     }
@@ -132,19 +149,25 @@ export const AdminDashboard = () => {
 
   const fetchGlobalSettings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('global_settings')
-        .select('setting_value')
-        .eq('setting_key', 'calculator_enabled')
-        .single();
+      console.log('⚙️ Fetching global settings...');
+      
+      const result = await withRetry(
+        async () => supabase
+          .from('global_settings')
+          .select('setting_value')
+          .eq('setting_key', 'calculator_enabled')
+          .single(),
+        { maxRetries: 3, initialDelay: 1000 }
+      );
 
-      if (error) {
-        console.error('Error fetching global settings:', error);
+      if (result.error) {
+        console.error('❌ Error fetching global settings:', result.error);
       } else {
-        setCalculatorEnabled(data?.setting_value ?? true);
+        console.log('✓ Global settings loaded successfully');
+        setCalculatorEnabled(result.data?.setting_value ?? true);
       }
     } catch (err) {
-      console.error('Exception fetching global settings:', err);
+      console.error('❌ Exception fetching global settings:', err);
     }
   }, []);
   

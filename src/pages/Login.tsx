@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { withRetry } from "@/lib/supabaseRetry";
 
 // Input validation schema for login form
 const loginSchema = z.object({
@@ -32,57 +33,95 @@ export const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Validate inputs before making API call
-    const validationResult = loginSchema.safeParse({
-      email: email.trim(),
-      password
-    });
+    try {
+      // Validate inputs before making API call
+      const validationResult = loginSchema.safeParse({
+        email: email.trim(),
+        password
+      });
 
-    if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0];
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: "Errore di validazione",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔐 Tentativo di login...');
+
+      // Login con retry automatico
+      const loginResult = await withRetry(
+        async () => supabase.auth.signInWithPassword({
+          email: validationResult.data.email,
+          password: validationResult.data.password,
+        }),
+        { maxRetries: 3, initialDelay: 1000 }
+      );
+
+      if (loginResult.error) {
+        console.error('❌ Errore login:', loginResult.error);
+        toast({
+          title: "Errore di accesso",
+          description: loginResult.error.message === "Failed to fetch" 
+            ? "Impossibile connettersi al server. Riprova tra qualche istante."
+            : loginResult.error.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('✓ Login effettuato, verifica permessi admin...');
+
+      // Controlla se l'utente è admin con retry
+      const adminCheckResult = await withRetry(
+        async () => supabase.rpc('is_admin'),
+        { maxRetries: 3, initialDelay: 1000 }
+      );
+
+      if (adminCheckResult.error) {
+        console.error('❌ Errore verifica admin:', adminCheckResult.error);
+        toast({
+          title: "Errore di verifica",
+          description: "Impossibile verificare i permessi. Riprova.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (adminCheckResult.data === true) {
+        console.log('✓ Utente admin verificato');
+        toast({
+          title: "Accesso effettuato",
+          description: "Benvenuto nell'area amministrativa",
+        });
+        navigate("/admin");
+      } else {
+        console.warn('⚠ Utente non admin');
+        toast({
+          title: "Accesso negato",
+          description: "Non hai i permessi di amministratore",
+          variant: "destructive",
+        });
+        // Logout automatico se non admin
+        await supabase.auth.signOut();
+        navigate("/");
+      }
+    } catch (error: any) {
+      console.error('❌ Errore imprevisto durante login:', error);
       toast({
-        title: "Errore di validazione",
-        description: firstError.message,
+        title: "Errore di connessione",
+        description: error?.message || "Si è verificato un errore. Riprova tra qualche istante.",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: validationResult.data.email,
-      password: validationResult.data.password,
-    });
-
-    if (error) {
-      toast({
-        title: "Errore di accesso",
-        description: error.message,
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Controlla se l'utente è admin
-    const { data: isAdminData } = await supabase.rpc('is_admin');
-    
-    if (isAdminData === true) {
-      toast({
-        title: "Accesso effettuato",
-        description: "Benvenuto nell'area amministrativa",
-      });
-      navigate("/admin");
-    } else {
-      toast({
-        title: "Accesso negato",
-        description: "Non hai i permessi di amministratore",
-        variant: "destructive",
-      });
-      navigate("/");
-    }
-
-    setLoading(false);
   };
 
 
@@ -122,7 +161,14 @@ export const Login = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Accesso in corso..." : "Accedi"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Accesso in corso...
+                </>
+              ) : (
+                "Accedi"
+              )}
             </Button>
           </form>
           

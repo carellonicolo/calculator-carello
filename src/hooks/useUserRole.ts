@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withRetry } from '@/lib/supabaseRetry';
 
 type UserRole = 'admin' | 'user' | null;
 
@@ -11,29 +12,41 @@ export const useUserRole = () => {
   useEffect(() => {
     const checkUserRole = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔍 Checking user role...');
         
-        if (!session?.user) {
+        const sessionResult = await withRetry(
+          async () => supabase.auth.getSession(),
+          { maxRetries: 2, initialDelay: 500 }
+        );
+        
+        if (!sessionResult?.data?.session?.user) {
+          console.log('ℹ No active session');
           setRole(null);
           setIsAdmin(false);
           setLoading(false);
           return;
         }
 
-        // Chiamare la funzione is_admin() del database
-        const { data, error } = await supabase.rpc('is_admin');
+        console.log('✓ Session found, checking admin status...');
 
-        if (error) {
-          console.error('Error checking admin status:', error);
+        // Chiamare la funzione is_admin() del database con retry
+        const adminResult = await withRetry(
+          async () => supabase.rpc('is_admin'),
+          { maxRetries: 3, initialDelay: 1000 }
+        );
+
+        if (adminResult.error) {
+          console.error('❌ Error checking admin status:', adminResult.error);
           setRole('user');
           setIsAdmin(false);
         } else {
-          const userIsAdmin = data === true;
+          const userIsAdmin = adminResult.data === true;
+          console.log(userIsAdmin ? '✓ User is admin' : 'ℹ User is not admin');
           setRole(userIsAdmin ? 'admin' : 'user');
           setIsAdmin(userIsAdmin);
         }
       } catch (err) {
-        console.error('Exception checking role:', err);
+        console.error('❌ Exception checking role:', err);
         setRole('user');
         setIsAdmin(false);
       } finally {

@@ -77,7 +77,6 @@ export const Calculator = () => {
   }, [showShortcuts]);
 
   useEffect(() => {
-    let fallbackPollInterval: NodeJS.Timeout | null = null;
 
     const initCalculator = async () => {
       try {
@@ -96,64 +95,15 @@ export const Calculator = () => {
 
     initCalculator();
 
-    // Subscribe to realtime changes with proper error handling
-    const settingsChannel = supabase
-      .channel('calculator-settings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'calculator_settings',
-        },
-        () => {
-          fetchSettings();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'global_settings',
-        },
-        () => {
-          fetchGlobalSettings();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'calculator_modes',
-        },
-        () => {
-          fetchModes();
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime connection established');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.warn('Realtime connection failed, falling back to polling:', err);
-          // Fallback to polling if realtime fails
-          fallbackPollInterval = setInterval(() => {
-            fetchSettings();
-            fetchGlobalSettings();
-            fetchModes();
-          }, 30000);
-        }
-      });
+    // Use polling for data synchronization (more reliable than WebSocket in some environments)
+    const pollInterval = setInterval(() => {
+      fetchSettings();
+      fetchGlobalSettings();
+      fetchModes();
+    }, 30000);
 
     return () => {
-      // Cleanup realtime subscription
-      supabase.removeChannel(settingsChannel);
-
-      // Cleanup polling interval if it exists
-      if (fallbackPollInterval) {
-        clearInterval(fallbackPollInterval);
-      }
+      clearInterval(pollInterval);
     };
   }, []);
 

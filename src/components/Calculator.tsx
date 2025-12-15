@@ -154,19 +154,25 @@ export const Calculator = () => {
     }
   };
 
+  /**
+   * Recupera le impostazioni globali dal database
+   * FIX: usa .maybeSingle() invece di .single() per gestire
+   * correttamente il caso in cui il record non esista
+   */
   const fetchGlobalSettings = async () => {
     try {
       const { data, error } = await supabase
         .from("global_settings")
         .select("setting_value")
         .eq("setting_key", "calculator_enabled")
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching global settings:", error);
         return;
       }
 
+      // Se non esiste record, default a true
       setCalculatorEnabled(data?.setting_value ?? true);
     } catch (err) {
       console.error("Exception fetching global settings:", err);

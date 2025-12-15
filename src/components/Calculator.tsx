@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { AlertCircle, Calculator as CalcIcon, Atom, Code } from "lucide-react";
 import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 
@@ -109,7 +109,7 @@ export const Calculator = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("calculator_settings")
         .select("function_key, is_enabled");
 
@@ -130,7 +130,7 @@ export const Calculator = () => {
 
   const fetchModes = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("calculator_modes")
         .select("*")
         .order("display_order");
@@ -161,7 +161,7 @@ export const Calculator = () => {
    */
   const fetchGlobalSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("global_settings")
         .select("setting_value")
         .eq("setting_key", "calculator_enabled")

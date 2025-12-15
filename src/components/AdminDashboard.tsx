@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { withRetry } from "@/lib/supabaseRetry";
@@ -82,7 +82,7 @@ export const AdminDashboard = () => {
       console.log('📊 Fetching settings...');
       
       const result = await withRetry(
-        async () => supabase
+        async () => supabaseClient
           .from('calculator_settings')
           .select('*')
           .order('category', { ascending: true })
@@ -120,7 +120,7 @@ export const AdminDashboard = () => {
       console.log('🎛️ Fetching calculator modes...');
       
       const result = await withRetry(
-        async () => supabase
+        async () => supabaseClient
           .from('calculator_modes')
           .select('*')
           .order('display_order', { ascending: true }),
@@ -152,7 +152,7 @@ export const AdminDashboard = () => {
       console.log('⚙️ Fetching global settings...');
       
       const result = await withRetry(
-        async () => supabase
+        async () => supabaseClient
           .from('global_settings')
           .select('setting_value')
           .eq('setting_key', 'calculator_enabled')
@@ -192,7 +192,7 @@ export const AdminDashboard = () => {
   }, [fetchSettings, fetchModes, fetchGlobalSettings]);
 
   const toggleSetting = async (id: string, currentValue: boolean) => {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('calculator_settings')
       .update({ is_enabled: !currentValue })
       .eq('id', id);
@@ -225,7 +225,7 @@ export const AdminDashboard = () => {
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('calculator_modes')
       .update({ is_enabled: !currentValue })
       .eq('id', id);
@@ -252,7 +252,7 @@ export const AdminDashboard = () => {
 
   const toggleGlobalCalculator = async () => {
     const newValue = !calculatorEnabled;
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('global_settings')
       .update({ setting_value: newValue })
       .eq('setting_key', 'calculator_enabled');
@@ -281,7 +281,7 @@ export const AdminDashboard = () => {
       : settings;
 
     const updatePromises = settingsToUpdate.map(setting =>
-      supabase
+      supabaseClient
         .from('calculator_settings')
         .update({ is_enabled: enableAll })
         .eq('id', setting.id)
@@ -315,7 +315,7 @@ export const AdminDashboard = () => {
     const settingsToUpdate = settings.filter(s => s.mode === mode && s.category === category);
     
     const updatePromises = settingsToUpdate.map(setting =>
-      supabase
+      supabaseClient
         .from('calculator_settings')
         .update({ is_enabled: enableAll })
         .eq('id', setting.id)
@@ -346,7 +346,7 @@ export const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     navigate('/login');
   };
 

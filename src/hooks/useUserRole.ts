@@ -23,7 +23,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseClient } from '@/lib/supabaseClient';
 import { withRetry } from '@/lib/supabaseRetry';
 
 // ============================================================================
@@ -82,7 +82,7 @@ export const useUserRole = () => {
         
         // Step 1: Verifica sessione con retry
         const sessionResult = await withRetry(
-          async () => supabase.auth.getSession(),
+          async () => supabaseClient.auth.getSession(),
           { maxRetries: 2, initialDelay: 500 }
         );
         
@@ -100,7 +100,7 @@ export const useUserRole = () => {
         // Step 2: Verifica ruolo admin con retry
         // La funzione is_admin() è SECURITY DEFINER nel database
         const adminResult = await withRetry(
-          async () => supabase.rpc('is_admin'),
+          async () => supabaseClient.rpc('is_admin'),
           { maxRetries: 3, initialDelay: 1000 }
         );
 
@@ -131,7 +131,7 @@ export const useUserRole = () => {
 
     // Sottoscrivi a cambiamenti auth state
     // Riesegue la verifica quando l'utente fa login/logout
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(() => {
       checkUserRole();
     });
 

@@ -3,7 +3,7 @@ import { Calculator } from "@/components/Calculator";
 import { Lock, Shield, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { useUserRole } from "@/hooks/useUserRole";
 import { HelpModal } from "@/components/HelpModal";
 
@@ -15,13 +15,13 @@ const Index = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       setIsAuthenticated(!!session);
     };
     
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
     });
 

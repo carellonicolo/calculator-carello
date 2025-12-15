@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import { z } from "zod";
@@ -55,7 +55,7 @@ export const Login = () => {
 
       // Login con retry automatico
       const loginResult = await withRetry(
-        async () => supabase.auth.signInWithPassword({
+        async () => supabaseClient.auth.signInWithPassword({
           email: validationResult.data.email,
           password: validationResult.data.password,
         }),
@@ -79,7 +79,7 @@ export const Login = () => {
 
       // Controlla se l'utente è admin con retry
       const adminCheckResult = await withRetry(
-        async () => supabase.rpc('is_admin'),
+        async () => supabaseClient.rpc('is_admin'),
         { maxRetries: 3, initialDelay: 1000 }
       );
 
@@ -109,7 +109,7 @@ export const Login = () => {
           variant: "destructive",
         });
         // Logout automatico se non admin
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
         navigate("/");
       }
     } catch (error: any) {

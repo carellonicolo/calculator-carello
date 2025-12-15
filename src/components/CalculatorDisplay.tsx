@@ -1,14 +1,55 @@
+/**
+ * ============================================================================
+ * CalculatorDisplay.tsx
+ * ============================================================================
+ * 
+ * Componente display della calcolatrice con supporto per:
+ * - Display numerico principale con animazioni
+ * - Storico operazioni
+ * - Indicatore operazione corrente
+ * - Visualizzazione multi-base per modalità programmer
+ * - Branding Prof. Carello
+ * 
+ * DESIGN:
+ * - Effetto LCD realistico
+ * - Font monospace per allineamento cifre
+ * - Animazioni fluide sui cambi valore
+ * - Responsive per mobile e desktop
+ * 
+ * @author Prof. Nicolò Carello
+ * ============================================================================
+ */
+
 import { BaseMode } from "@/hooks/useCalculatorState";
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
 interface CalculatorDisplayProps {
+  /** Valore corrente da visualizzare */
   display: string;
+  /** Storico delle operazioni (es: "5 + 3 =") */
   history: string;
+  /** Operazione corrente in attesa (es: "+") */
   operation: string | null;
+  /** Flag per animazione su cambio valore */
   isAnimating: boolean;
+  /** Se true, mostra display multi-base */
   isProgrammerMode?: boolean;
+  /** Base numerica corrente per programmer mode */
   baseMode?: BaseMode;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+/**
+ * Display principale della calcolatrice
+ * Mostra il valore corrente, lo storico e (opzionalmente) 
+ * la rappresentazione multi-base in programmer mode
+ */
 export const CalculatorDisplay = ({
   display,
   history,
@@ -17,9 +58,23 @@ export const CalculatorDisplay = ({
   isProgrammerMode = false,
   baseMode = 10,
 }: CalculatorDisplayProps) => {
+  
+  // -------------------------------------------------------------------------
+  // UTILITY: Calcola rappresentazione in tutte le basi
+  // -------------------------------------------------------------------------
+  
+  /**
+   * Converte un valore in tutte le basi numeriche
+   * Usato per la visualizzazione multi-base in programmer mode
+   * 
+   * @param value - Valore come stringa nella base corrente
+   * @param currentBase - Base numerica del valore input
+   * @returns Oggetto con rappresentazioni in tutte le basi
+   */
   const getMultiBaseDisplay = (value: string, currentBase: BaseMode) => {
     const numValue = parseInt(value, currentBase);
 
+    // Gestione valore non valido
     if (isNaN(numValue)) {
       return {
         hex: "0",
@@ -37,17 +92,25 @@ export const CalculatorDisplay = ({
     };
   };
 
+  // Calcola multi-base solo se necessario (performance)
   const multiBase = isProgrammerMode
     ? getMultiBaseDisplay(display, baseMode)
     : null;
 
+  // -------------------------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------------------------
+
   return (
     <div className="relative mb-6 p-6 lcd-display rounded-2xl min-h-[120px] sm:min-h-[140px] flex flex-col justify-end overflow-hidden z-10 calculator-display">
-      {/* Grid pattern overlay removed - now handled by .lcd-display */}
-
-      {/* Programmer mode: Multi-base display */}
+      
+      {/* ===================================================================
+          PROGRAMMER MODE: Display multi-base
+          Mostra il valore in HEX, DEC, OCT, BIN simultaneamente
+          =================================================================== */}
       {isProgrammerMode && multiBase && (
         <div className="mb-3 space-y-1">
+          {/* Hexadecimal */}
           <div className="flex items-center gap-2 text-xs font-mono text-[hsl(var(--calculator-text))]/60">
             <span className="w-10 text-[hsl(var(--calculator-text))]/40">
               HEX
@@ -60,6 +123,8 @@ export const CalculatorDisplay = ({
               {multiBase.hex}
             </span>
           </div>
+          
+          {/* Decimal */}
           <div className="flex items-center gap-2 text-xs font-mono text-[hsl(var(--calculator-text))]/60">
             <span className="w-10 text-[hsl(var(--calculator-text))]/40">
               DEC
@@ -72,6 +137,8 @@ export const CalculatorDisplay = ({
               {multiBase.dec}
             </span>
           </div>
+          
+          {/* Octal */}
           <div className="flex items-center gap-2 text-xs font-mono text-[hsl(var(--calculator-text))]/60">
             <span className="w-10 text-[hsl(var(--calculator-text))]/40">
               OCT
@@ -84,6 +151,8 @@ export const CalculatorDisplay = ({
               {multiBase.oct}
             </span>
           </div>
+          
+          {/* Binary - può essere lungo, quindi break-all */}
           <div className="flex items-center gap-2 text-xs font-mono text-[hsl(var(--calculator-text))]/60 break-all">
             <span className="w-10 text-[hsl(var(--calculator-text))]/40 flex-shrink-0">
               BIN
@@ -99,35 +168,48 @@ export const CalculatorDisplay = ({
         </div>
       )}
 
-      {/* History/Operation display */}
+      {/* ===================================================================
+          HISTORY DISPLAY
+          Mostra lo storico delle operazioni (es: "5 + 3 = 8")
+          =================================================================== */}
       {history && (
         <div className="text-sm font-mono text-[hsl(var(--calculator-text))]/50 mb-2 text-right truncate">
           {history}
         </div>
       )}
 
-      {/* Current operation indicator */}
+      {/* ===================================================================
+          OPERATION INDICATOR
+          Badge che mostra l'operazione corrente in attesa
+          =================================================================== */}
       {operation && (
         <div className="absolute top-3 right-3 text-xs font-bold text-[hsl(var(--calculator-operator-glow))] bg-[hsl(var(--calculator-operator))]/20 px-2 py-1 rounded">
           {operation}
         </div>
       )}
 
-      {/* Main display */}
+      {/* ===================================================================
+          MAIN DISPLAY
+          Il valore numerico principale con animazione su cambiamenti
+          =================================================================== */}
       <div
         className={`text-4xl sm:text-5xl md:text-6xl font-semibold font-mono text-[hsl(var(--calculator-text))] break-all text-right glow-text transition-all duration-300 number-flip ${
           isAnimating ? 'scale-105' : 'scale-100'
         }`}
         style={{
           letterSpacing: '-0.02em',
-          fontFeatureSettings: "'tnum' 1"
+          fontFeatureSettings: "'tnum' 1" // Numeri tabulari per allineamento
         }}
       >
         {display}
+        {/* Cursore lampeggiante quando display è zero */}
         {display === '0' && <span className="cursor-blink">|</span>}
       </div>
 
-      {/* Branding */}
+      {/* ===================================================================
+          BRANDING
+          Link al portfolio Prof. Carello
+          =================================================================== */}
       <a 
         href="https://apps.nicolocarello.it"
         target="_blank"

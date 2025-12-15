@@ -1,15 +1,73 @@
+/**
+ * ============================================================================
+ * useKeyboardInput.ts
+ * ============================================================================
+ * 
+ * Hook per gestire l'input da tastiera fisica sulla calcolatrice.
+ * Supporta tutte le modalità (Standard, Scientific, Programmer) con
+ * shortcut contestuali e feedback visivo.
+ * 
+ * FEATURES:
+ * - Mapping tasti numerici 0-9 e A-F (hex)
+ * - Operatori aritmetici (+, -, *, /)
+ * - Funzioni scientifiche (sin, cos, tan, log, etc.)
+ * - Operazioni bitwise per modalità programmer
+ * - Shortcut con modificatori (Ctrl, Alt, Shift)
+ * - Rispetta le impostazioni admin (funzioni disabilitate)
+ * - Previene azioni browser predefinite per tasti calcolatrice
+ * 
+ * @author Prof. Nicolò Carello
+ * ============================================================================
+ */
+
 import { useEffect, useCallback, useRef } from 'react';
 import { useCalculatorState } from './useCalculatorState';
 import { toast } from '@/hooks/use-toast';
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/**
+ * Opzioni di configurazione per l'hook
+ */
 interface KeyboardInputOptions {
+  /** Modalità calcolatrice corrente */
   mode: 'standard' | 'scientific' | 'programmer';
+  
+  /** Mappa delle funzioni abilitate/disabilitate */
   settings: { [key: string]: boolean };
+  
+  /** Istanza del calculator state hook */
   calc: ReturnType<typeof useCalculatorState>;
+  
+  /** Flag: se true, l'hook processa gli eventi */
   isActive: boolean;
+  
+  /** Callback opzionale per feedback visivo sui tasti */
   onKeyPress?: (key: string) => void;
 }
 
+// ============================================================================
+// HOOK
+// ============================================================================
+
+/**
+ * Hook per gestire input da tastiera fisica
+ * 
+ * @param options - Configurazione dell'hook
+ * 
+ * @example
+ * ```tsx
+ * useKeyboardInput({
+ *   mode: 'scientific',
+ *   settings: settingsFromDB,
+ *   calc: useCalculatorState(),
+ *   isActive: true,
+ *   onKeyPress: (key) => highlightButton(key)
+ * });
+ * ```
+ */
 export const useKeyboardInput = ({
   mode,
   settings,
@@ -17,26 +75,57 @@ export const useKeyboardInput = ({
   isActive,
   onKeyPress
 }: KeyboardInputOptions) => {
+  // -------------------------------------------------------------------------
+  // REFS per prevenire ripetizioni troppo rapide
+  // -------------------------------------------------------------------------
+  
+  /** Ultimo tasto premuto */
   const lastKeyPressRef = useRef<string>('');
+  
+  /** Timestamp ultimo tasto */
   const lastKeyTimeRef = useRef<number>(0);
 
+  // -------------------------------------------------------------------------
+  // UTILITY FUNCTIONS
+  // -------------------------------------------------------------------------
+  
+  /**
+   * Verifica se una funzione è abilitata nelle impostazioni
+   * @param key - Chiave della funzione
+   * @returns true se abilitata (default se non definita)
+   */
   const isEnabled = useCallback((key: string) => {
     return settings[key] !== false;
   }, [settings]);
 
+  // -------------------------------------------------------------------------
+  // MAIN HANDLER
+  // -------------------------------------------------------------------------
+  
+  /**
+   * Handler principale per eventi keydown
+   * Processa tutti i tasti e dispensa l'azione appropriata
+   */
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Skip se hook non attivo
     if (!isActive) return;
 
     const target = e.target as HTMLElement;
     
-    // Ignora se l'utente sta digitando in un input/textarea
+    // -----------------------------------------------------------------------
+    // IGNORA INPUT FIELDS
+    // Permette digitazione normale in campi di testo
+    // -----------------------------------------------------------------------
     if (target.tagName === 'INPUT' || 
         target.tagName === 'TEXTAREA' || 
         target.isContentEditable) {
       return;
     }
 
-    // Previeni ripetizioni troppo rapide
+    // -----------------------------------------------------------------------
+    // DEBOUNCE: previene ripetizioni troppo rapide
+    // Utile per evitare input multipli accidentali
+    // -----------------------------------------------------------------------
     const now = Date.now();
     if (lastKeyPressRef.current === e.key && now - lastKeyTimeRef.current < 100) {
       return;
@@ -44,7 +133,10 @@ export const useKeyboardInput = ({
     lastKeyPressRef.current = e.key;
     lastKeyTimeRef.current = now;
 
-    // Tasti della calcolatrice
+    // -----------------------------------------------------------------------
+    // IDENTIFICA TASTI CALCOLATRICE
+    // Previene azioni browser default per questi tasti
+    // -----------------------------------------------------------------------
     const isCalculatorKey = /^[0-9a-f+\-*/%.=()!|&~<>^pectslnqrmhxy]$/i.test(e.key) || 
                            e.key === 'Enter' || 
                            e.key === 'Escape' || 
@@ -60,27 +152,31 @@ export const useKeyboardInput = ({
       e.stopPropagation();
     }
 
-    // Callback per feedback visivo
+    // Callback per feedback visivo (es. highlight pulsante)
     onKeyPress?.(e.key);
 
-    // Gestione numeri 0-9
+    // -----------------------------------------------------------------------
+    // GESTIONE NUMERI 0-9
+    // -----------------------------------------------------------------------
     if (/^[0-9]$/.test(e.key)) {
       const digit = parseInt(e.key);
       
-      // Verifica validità per base corrente in programmer mode
+      // Validazione per base corrente in programmer mode
       if (mode === 'programmer') {
+        // Binario: solo 0-1
         if (calc.baseMode === 2 && digit > 1) {
           toast({
-            title: "Invalid digit",
-            description: `Only 0-1 are valid in binary mode`,
+            title: "Cifra non valida",
+            description: `Solo 0-1 sono valide in modalità binaria`,
             variant: "destructive"
           });
           return;
         }
+        // Ottale: solo 0-7
         if (calc.baseMode === 8 && digit > 7) {
           toast({
-            title: "Invalid digit",
-            description: `Only 0-7 are valid in octal mode`,
+            title: "Cifra non valida",
+            description: `Solo 0-7 sono valide in modalità ottale`,
             variant: "destructive"
           });
           return;
@@ -91,7 +187,9 @@ export const useKeyboardInput = ({
       return;
     }
 
-    // Gestione hex digits A-F (solo programmer mode in HEX)
+    // -----------------------------------------------------------------------
+    // GESTIONE HEX DIGITS A-F (solo programmer mode in base 16)
+    // -----------------------------------------------------------------------
     if (mode === 'programmer' && calc.baseMode === 16 && /^[a-f]$/i.test(e.key)) {
       if (isEnabled('conversions_prog')) {
         calc.inputHexDigit(e.key.toUpperCase());
@@ -99,8 +197,11 @@ export const useKeyboardInput = ({
       return;
     }
 
-    // Operatori e funzioni base
+    // -----------------------------------------------------------------------
+    // OPERATORI E FUNZIONI
+    // -----------------------------------------------------------------------
     switch (e.key.toLowerCase()) {
+      // Operatori aritmetici base
       case '+':
         calc.performOperation('+');
         break;
@@ -121,6 +222,8 @@ export const useKeyboardInput = ({
       case '.':
         calc.inputDecimal();
         break;
+        
+      // Controlli
       case 'escape':
         calc.clear();
         break;
@@ -136,14 +239,16 @@ export const useKeyboardInput = ({
         }
         break;
 
-      // Scientific mode - Constants
+      // =====================================================================
+      // SCIENTIFIC MODE - Costanti
+      // =====================================================================
       case 'p':
         if (mode === 'scientific' && isEnabled('pi')) {
           calc.insertConstant('pi');
         } else if (!isEnabled('pi')) {
           toast({
-            title: "Function disabled",
-            description: "π constant is disabled by admin",
+            title: "Funzione disabilitata",
+            description: "La costante π è disabilitata dall'amministratore",
             variant: "destructive"
           });
         }
@@ -153,14 +258,16 @@ export const useKeyboardInput = ({
           calc.insertConstant('e');
         } else if (!isEnabled('e')) {
           toast({
-            title: "Function disabled",
-            description: "e constant is disabled by admin",
+            title: "Funzione disabilitata",
+            description: "La costante e è disabilitata dall'amministratore",
             variant: "destructive"
           });
         }
         break;
 
-      // Scientific mode - Trigonometric
+      // =====================================================================
+      // SCIENTIFIC MODE - Trigonometria
+      // =====================================================================
       case 's':
         if (mode === 'scientific') {
           if (e.shiftKey && isEnabled('asin')) {
@@ -169,8 +276,8 @@ export const useKeyboardInput = ({
             calc.performTrigonometric('sin');
           } else {
             toast({
-              title: "Function disabled",
-              description: "sin function is disabled by admin",
+              title: "Funzione disabilitata",
+              description: "La funzione sin è disabilitata dall'amministratore",
               variant: "destructive"
             });
           }
@@ -184,8 +291,8 @@ export const useKeyboardInput = ({
             calc.performTrigonometric('cos');
           } else {
             toast({
-              title: "Function disabled",
-              description: "cos function is disabled by admin",
+              title: "Funzione disabilitata",
+              description: "La funzione cos è disabilitata dall'amministratore",
               variant: "destructive"
             });
           }
@@ -199,37 +306,41 @@ export const useKeyboardInput = ({
             calc.performTrigonometric('tan');
           } else {
             toast({
-              title: "Function disabled",
-              description: "tan function is disabled by admin",
+              title: "Funzione disabilitata",
+              description: "La funzione tan è disabilitata dall'amministratore",
               variant: "destructive"
             });
           }
         }
         break;
 
-      // Scientific mode - Other functions
+      // =====================================================================
+      // SCIENTIFIC MODE - Altre funzioni
+      // =====================================================================
+      
+      // FIX: usa 'sqrt' invece di '√' per matchare il nome funzione corretto
       case 'q':
         if (mode === 'scientific' && isEnabled('sqrt')) {
-          calc.performUnaryOperation('√');
+          calc.performUnaryOperation('sqrt');
         }
         break;
       case 'r':
         if (mode === 'scientific') {
           if (e.shiftKey && isEnabled('cube')) {
-            calc.performUnaryOperation('x³');
+            calc.performUnaryOperation('cube');
           } else if (isEnabled('square_sci')) {
-            calc.performUnaryOperation('x²');
+            calc.performUnaryOperation('square');
           }
         }
         break;
       case '^':
         if (mode === 'scientific' && isEnabled('power')) {
-          calc.performOperation('xʸ');
+          calc.performOperation('^');
         }
         break;
       case '!':
         if (mode === 'scientific' && isEnabled('factorial')) {
-          calc.performUnaryOperation('n!');
+          calc.performUnaryOperation('factorial');
         }
         break;
       case 'l':
@@ -248,7 +359,9 @@ export const useKeyboardInput = ({
         }
         break;
 
-      // Scientific mode - Hyperbolic
+      // =====================================================================
+      // SCIENTIFIC MODE - Iperboliche
+      // =====================================================================
       case 'h':
         if (mode === 'scientific') {
           if (e.shiftKey && isEnabled('cosh')) {
@@ -264,39 +377,43 @@ export const useKeyboardInput = ({
         }
         break;
 
-      // Programmer mode - Bitwise operations
+      // =====================================================================
+      // PROGRAMMER MODE - Operazioni Bitwise
+      // =====================================================================
       case '&':
         if (mode === 'programmer' && isEnabled('and')) {
-          calc.performBitwiseOperation('AND');
+          calc.performBitwiseOperation('and');
         }
         break;
       case '|':
         if (mode === 'programmer' && isEnabled('or')) {
-          calc.performBitwiseOperation('OR');
+          calc.performBitwiseOperation('or');
         }
         break;
       case '~':
         if (mode === 'programmer' && isEnabled('not')) {
-          calc.performBitwiseOperation('NOT');
+          calc.performBitwiseOperation('not');
         }
         break;
       case 'x':
         if (mode === 'programmer' && isEnabled('xor')) {
-          calc.performBitwiseOperation('XOR');
+          calc.performBitwiseOperation('xor');
         }
         break;
       case '<':
         if (mode === 'programmer' && isEnabled('lsh')) {
-          calc.performBitwiseOperation('<<');
+          calc.performBitwiseOperation('lsh', 1);
         }
         break;
       case '>':
         if (mode === 'programmer' && isEnabled('rsh')) {
-          calc.performBitwiseOperation('>>');
+          calc.performBitwiseOperation('rsh', 1);
         }
         break;
 
-      // Shortcuts con modificatori
+      // =====================================================================
+      // SHORTCUT CON MODIFICATORI
+      // =====================================================================
       default:
         // Alt shortcuts
         if (e.altKey) {
@@ -308,6 +425,7 @@ export const useKeyboardInput = ({
         // Ctrl/Cmd shortcuts
         if (e.ctrlKey || e.metaKey) {
           switch (e.key.toLowerCase()) {
+            // Memory operations
             case 'm':
               if (isEnabled('memory')) {
                 calc.memoryStore();
@@ -334,7 +452,7 @@ export const useKeyboardInput = ({
               }
               break;
             
-            // Programmer mode - Base conversions
+            // Programmer mode - Conversioni base
             case 'h':
               if (mode === 'programmer' && isEnabled('conversions_prog')) {
                 calc.convertBase(16);
@@ -382,6 +500,10 @@ export const useKeyboardInput = ({
     }
   }, [isActive, mode, settings, calc, isEnabled, onKeyPress]);
 
+  // -------------------------------------------------------------------------
+  // EFFECT: Registra/deregistra event listener
+  // -------------------------------------------------------------------------
+  
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

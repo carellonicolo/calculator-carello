@@ -1,73 +1,122 @@
-# Welcome to your Lovable project
+# Calculator
 
-## Project info
+> Calcolatrice scientifica web con funzioni avanzate e grafici
 
-**URL**: https://lovable.dev/projects/fc53adbd-80cd-4f5d-8ac5-39d0d4342025
+[![Licenza MIT](https://img.shields.io/badge/Licenza-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![GitHub stars](https://img.shields.io/github/stars/carellonicolo/calculator-carello?style=social)](https://github.com/carellonicolo/calculator-carello)
+[![GitHub issues](https://img.shields.io/github/issues/carellonicolo/calculator-carello)](https://github.com/carellonicolo/calculator-carello/issues)
 
-## How can I edit this code?
+## Panoramica
 
-There are several ways of editing your application.
+Calculator e un'applicazione web che offre una calcolatrice scientifica completa con interfaccia moderna e supporto per funzioni avanzate. Oltre alle operazioni aritmetiche di base, include funzioni trigonometriche, logaritmiche, potenze e la possibilita di visualizzare grafici di funzioni matematiche.
 
-**Use Lovable**
+Lo strumento e pensato per studenti e professionisti che necessitano di un calcolatore veloce e accessibile direttamente dal browser, senza installazioni.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fc53adbd-80cd-4f5d-8ac5-39d0d4342025) and start prompting.
+## Funzionalita Principali
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Operazioni di base** — Addizione, sottrazione, moltiplicazione, divisione
+- **Funzioni scientifiche** — Trigonometria (sin, cos, tan), logaritmi, radici, potenze, fattoriale
+- **Visualizzazione grafici** — Plotting di funzioni matematiche con Recharts
+- **Cronologia** — Storico delle operazioni effettuate
+- **Tema chiaro/scuro** — Supporto completo per dark mode
+- **Responsive** — Utilizzabile su desktop e dispositivi mobili
+- **Tastiera** — Supporto per input da tastiera
 
-**Use your preferred IDE**
+## Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+| Tecnologia | Utilizzo |
+|:--|:--|
+| ![React](https://img.shields.io/badge/React_18-61dafb?logo=react&logoColor=white) | Framework UI |
+| ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178c6?logo=typescript&logoColor=white) | Linguaggio tipizzato |
+| ![Vite](https://img.shields.io/badge/Vite_5-646cff?logo=vite&logoColor=white) | Build tool |
+| ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06b6d4?logo=tailwindcss&logoColor=white) | Styling |
+| ![Recharts](https://img.shields.io/badge/Recharts-22b5bf) | Grafici |
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Requisiti
 
-Follow these steps:
+- **Node.js** >= 18
+- **npm** >= 9 (oppure bun)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Installazione
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone https://github.com/carellonicolo/calculator-carello.git
+cd calculator-carello
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+L'applicazione sara disponibile su `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Utilizzo
 
-**Use GitHub Codespaces**
+1. Utilizza i pulsanti o la tastiera per inserire le operazioni
+2. Per le funzioni scientifiche, passa alla modalita avanzata
+3. I risultati vengono calcolati in tempo reale
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Struttura del Progetto
 
-## What technologies are used for this project?
+```
+calculator-carello/
+├── src/
+│   ├── components/     # Componenti React (tastiera, display, grafici)
+│   ├── lib/            # Logica di calcolo
+│   ├── pages/          # Pagine dell'applicazione
+│   └── hooks/          # Custom hooks
+├── public/             # Asset statici
+├── index.html          # Entry point HTML
+└── vite.config.ts      # Configurazione Vite
+```
 
-This project is built with:
+## Deploy
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run build
+```
 
-## How can I deploy this project?
+La cartella `dist/` e deployabile su Cloudflare Pages, Netlify, Vercel o qualsiasi hosting statico.
 
-Simply open [Lovable](https://lovable.dev/projects/fc53adbd-80cd-4f5d-8ac5-39d0d4342025) and click on Share -> Publish.
+## Contribuire
 
-## Can I connect a custom domain to my Lovable project?
+I contributi sono benvenuti! Consulta le [linee guida per contribuire](CONTRIBUTING.md) per maggiori dettagli.
 
-Yes, you can!
+## Licenza
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Distribuito con licenza MIT. Vedi il file [LICENSE](LICENSE) per i dettagli completi.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Autore
+
+**Nicolo Carello**
+- GitHub: [@carellonicolo](https://github.com/carellonicolo)
+- Website: [nicolocarello.it](https://nicolocarello.it)
+
+---
+
+<sub>Sviluppato con l'ausilio dell'intelligenza artificiale.</sub>
+
+## Progetti Correlati
+
+Questo progetto fa parte di una collezione di strumenti didattici e applicazioni open-source:
+
+| Progetto | Descrizione |
+|:--|:--|
+| [DFA Visual Editor](https://github.com/carellonicolo/AFS) | Editor visuale per automi DFA |
+| [Turing Machine](https://github.com/carellonicolo/Turing-Machine) | Simulatore di Macchina di Turing |
+| [Scheduler](https://github.com/carellonicolo/Scheduler) | Simulatore di scheduling CPU |
+| [Subnet Calculator](https://github.com/carellonicolo/Subnet) | Calcolatore subnet IPv4/IPv6 |
+| [Base Converter](https://github.com/carellonicolo/base-converter) | Suite di conversione multi-funzionale |
+| [Gioco del Lotto](https://github.com/carellonicolo/giocodellotto) | Simulatore Lotto e SuperEnalotto |
+| [MicroASM](https://github.com/carellonicolo/microasm) | Simulatore assembly |
+| [Flow Charts](https://github.com/carellonicolo/flow-charts) | Editor di diagrammi di flusso |
+| [Cypher](https://github.com/carellonicolo/cypher) | Toolkit di crittografia |
+| [Snake](https://github.com/carellonicolo/snake) | Snake game retro |
+| [Pong](https://github.com/carellonicolo/pongcarello) | Pong game |
+| [IPSC Score](https://github.com/carellonicolo/IPSC) | Calcolatore punteggi IPSC |
+| [Quiz](https://github.com/carellonicolo/quiz) | Piattaforma quiz scolastici |
+| [Carello Hub](https://github.com/carellonicolo/carello-hub) | Dashboard educativa |
+| [Prof Carello](https://github.com/carellonicolo/prof-carello) | Gestionale lezioni private |
+| [DOCSITE](https://github.com/carellonicolo/DOCSITE) | Piattaforma documentale |

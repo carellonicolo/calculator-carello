@@ -1,0 +1,21 @@
+# Configurazione del progetto Cloudflare Pages "calculator-carello".
+#
+# Questo file è la FONTE DI VERITÀ dei binding: al deploy sostituisce le
+# variabili/binding impostati a mano nel dashboard (le vecchie variabili
+# Supabase dell'app precedente spariscono da sole).
+#
+# D1: si riusa il database esistente `ccna1` (limite piano free quasi
+# raggiunto); tutte le tabelle della calcolatrice sono prefissate `calc_`,
+# quindi non interferiscono con le tabelle del quiz CCNA1.
+#
+# Rollback alla convenzione "binding dal dashboard": elimina questo file e
+# ricrea il binding DB → ccna1 in Pages → Settings → Functions → D1 bindings.
+
+name = "calculator-carello"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-03-11"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ccna1"
+database_id = "c3b75339-db87-44b4-8ca8-45998b4a4253"

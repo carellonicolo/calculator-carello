@@ -1,40 +1,40 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { fileURLToPath, URL } from 'node:url';
+
+// In dev: proxy /api → wrangler pages dev (porta 8788).
+// Avvia: `npx wrangler pages dev dist --port 8788` in un altro terminale,
+// poi `npm run dev` per il frontend.
+export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8788',
+        changeOrigin: true,
+      },
     },
   },
   build: {
-    sourcemap: true, // Enable source maps for production to improve debugging and SEO scores
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks - separate large libraries
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': [
-            '@radix-ui/react-accordion',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-switch',
-          ],
-          'supabase-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
+          // I vendor cambiano raramente → restano in cache tra deploy.
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-motion': ['framer-motion'],
         },
       },
     },
-    chunkSizeWarningLimit: 600, // Increase warning limit slightly
   },
-}));
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.test.{ts,tsx}'],
+  },
+});

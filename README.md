@@ -1,122 +1,107 @@
-# Calculator
+# Calcolatrice — calculator.nicolocarello.it
 
-> Calcolatrice scientifica web con funzioni avanzate e grafici
+Calcolatrice software per le **verifiche in classe**: il docente decide quali
+funzioni sono disponibili (per classe, con preset riusabili) e le modifiche
+arrivano **live** alle calcolatrici aperte degli studenti. Accesso riservato
+agli utenti autenticati con l'SSO della piattaforma (`auth.nicolocarello.it`).
 
-[![Licenza MIT](https://img.shields.io/badge/Licenza-MIT-blue.svg)](LICENSE)
-[![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![GitHub stars](https://img.shields.io/github/stars/carellonicolo/calculator-carello?style=social)](https://github.com/carellonicolo/calculator-carello)
-[![GitHub issues](https://img.shields.io/github/issues/carellonicolo/calculator-carello)](https://github.com/carellonicolo/calculator-carello/issues)
+Stack identico alle altre app della piattaforma (VLSM, CCNA1):
+**Vite + React 18 + TypeScript + Tailwind + Cloudflare Pages Functions + D1**,
+header unificato `carello-shell`, tema caldo "Carello" con blob animati.
 
-## Panoramica
+## Modalità
 
-Calculator e un'applicazione web che offre una calcolatrice scientifica completa con interfaccia moderna e supporto per funzioni avanzate. Oltre alle operazioni aritmetiche di base, include funzioni trigonometriche, logaritmiche, potenze e la possibilita di visualizzare grafici di funzioni matematiche.
+| Modalità | Contenuto | Controlli docente |
+|---|---|---|
+| Standard | 4 operazioni, parentesi, ± | %, √, memoria (M+/M−/MR/MC) |
+| Scientifica | funzioni matematiche | master + trigonometria, log/exp, potenze/radici, fattoriale, costanti π·e |
+| Programmatore | basi di numerazione | master + conversioni BIN/OCT/DEC/HEX, bitwise (AND/OR/XOR/NOT/shift), word 8/16/32 bit |
+| Grafici | y = f(x) su piano cartesiano | master (le funzioni vietate valgono anche qui) |
+| Statistica | media, mediana, σ, varianza… | master |
+| Cronologia | storico calcoli sul dispositivo | master (spegnendola viene anche svuotata) |
 
-Lo strumento e pensato per studenti e professionisti che necessitano di un calcolatore veloce e accessibile direttamente dal browser, senza installazioni.
+Il modello dei controlli è **ibrido**: un interruttore *master* spegne
+un'intera area in un clic; dentro l'area, interruttori fini per gruppo.
+I tasti rimossi appaiono come **celle fantasma con lucchetto**: lo studente
+capisce che mancano per scelta del docente, non per un bug.
 
-## Funzionalita Principali
+## Come funziona
 
-- **Operazioni di base** — Addizione, sottrazione, moltiplicazione, divisione
-- **Funzioni scientifiche** — Trigonometria (sin, cos, tan), logaritmi, radici, potenze, fattoriale
-- **Visualizzazione grafici** — Plotting di funzioni matematiche con Recharts
-- **Cronologia** — Storico delle operazioni effettuate
-- **Tema chiaro/scuro** — Supporto completo per dark mode
-- **Responsive** — Utilizzabile su desktop e dispositivi mobili
-- **Tastiera** — Supporto per input da tastiera
+- **Accesso**: solo utenti SSO. Studenti: serve la **classe approvata**
+  sull'IdP (chi è in attesa vede una schermata dedicata). Il **docente** è
+  riconosciuto da auth (`isTeacher`/`isSuperAdmin`) e ha sempre la
+  calcolatrice completa + la **Console docente** su `/admin`.
+- **Configurazione per classe**: risoluzione `classe → predefinita ('*') →
+  tutto attivo`. I **preset** salvati si applicano a più classi in un clic.
+- **Live**: la calcolatrice fa polling leggero ogni ~10 s
+  (`GET /api/student/config`), che funge anche da heartbeat per il tab
+  **In diretta** (chi è online adesso, log aperture ultime 12 ore,
+  ritenzione 60 giorni).
+- **Enforcement unico**: i permessi passano tutti dal motore di calcolo
+  (`src/lib/engine/evaluator.ts`) — una funzione disattivata è rifiutata
+  anche se digitata nei grafici o da tastiera fisica.
 
-## Tech Stack
+## Struttura
 
-| Tecnologia | Utilizzo |
-|:--|:--|
-| ![React](https://img.shields.io/badge/React_18-61dafb?logo=react&logoColor=white) | Framework UI |
-| ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178c6?logo=typescript&logoColor=white) | Linguaggio tipizzato |
-| ![Vite](https://img.shields.io/badge/Vite_5-646cff?logo=vite&logoColor=white) | Build tool |
-| ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06b6d4?logo=tailwindcss&logoColor=white) | Styling |
-| ![Recharts](https://img.shields.io/badge/Recharts-22b5bf) | Grafici |
+```
+functions/            Cloudflare Pages Functions (API)
+  _lib/sso.ts         verificatore SSO (copiato da AUTH/integration)
+  _lib/calcconfig.ts  FONTE UNICA della forma CalcConfig (usata anche dalla SPA)
+  _lib/calcdb.ts      accesso alle tabelle calc_* su D1
+  api/me.ts           identità SSO
+  api/student/        state (bootstrap+sessione), config (polling live)
+  api/teacher/        overview, class-config, presets, apply-preset, live
+src/
+  lib/engine/         evaluator (parser Pratt, niente eval), basi/bitwise, statistica, grafici
+  hooks/              useAppState (gate+polling), useCalculator
+  components/         calculator/ (5 modalità), admin/ (console), ui/, screens/
+migrations/           0001_calc_init.sql (tabelle calc_*)
+public/carello-shell.js  top bar unificata (THEME_KEY = calc_theme)
+wrangler.toml         config Pages: output dist + binding D1 → ccna1
+```
 
-## Requisiti
+## Database
 
-- **Node.js** >= 18
-- **npm** >= 9 (oppure bun)
+⚠️ **Nessun database dedicato**: si riusa il D1 esistente **`ccna1`**
+(limite di 10 DB del piano free). Tutte le tabelle sono prefissate `calc_`
+(`calc_class_config`, `calc_presets`, `calc_sessions`) e non toccano le
+tabelle del quiz. In sola lettura si attinge a `class_exam_state`/`students`
+per proporre l'elenco classi al docente.
 
-## Installazione
+Migrazione (già applicata):
 
 ```bash
-git clone https://github.com/carellonicolo/calculator-carello.git
-cd calculator-carello
-npm install
-npm run dev
-```
-
-L'applicazione sara disponibile su `http://localhost:8080`.
-
-## Utilizzo
-
-1. Utilizza i pulsanti o la tastiera per inserire le operazioni
-2. Per le funzioni scientifiche, passa alla modalita avanzata
-3. I risultati vengono calcolati in tempo reale
-
-## Struttura del Progetto
-
-```
-calculator-carello/
-├── src/
-│   ├── components/     # Componenti React (tastiera, display, grafici)
-│   ├── lib/            # Logica di calcolo
-│   ├── pages/          # Pagine dell'applicazione
-│   └── hooks/          # Custom hooks
-├── public/             # Asset statici
-├── index.html          # Entry point HTML
-└── vite.config.ts      # Configurazione Vite
+npx wrangler d1 execute ccna1 --remote --file=migrations/0001_calc_init.sql
 ```
 
 ## Deploy
 
+Cloudflare Pages, progetto `calculator-carello` (git-connected, push su
+`main`). Build: `npm run build` → `dist`. **I binding vivono in
+`wrangler.toml`** (diversamente da VLSM/CCNA1 che li hanno nel dashboard):
+al deploy sostituisce le variabili del dashboard — le vecchie variabili
+Supabase dell'app precedente spariscono da sole. Rollback: elimina
+`wrangler.toml` e ricrea il binding `DB → ccna1` dal dashboard.
+
+## Sviluppo locale
+
 ```bash
-npm run build
+npm install
+npm run build                # typecheck SPA + bundle
+npm test                     # unit test del motore di calcolo
+npm run typecheck:functions  # typecheck delle Functions
+
+# Functions + D1 in locale (in un secondo terminale):
+npx wrangler pages dev dist --port 8788 --d1 DB=ccna1
+npm run dev                  # frontend con proxy /api → 8788
 ```
 
-La cartella `dist/` e deployabile su Cloudflare Pages, Netlify, Vercel o qualsiasi hosting statico.
+> Il login SSO completo funziona solo sul dominio `*.nicolocarello.it`
+> (cookie condiviso): in locale le API rispondono 401, è il comportamento
+> atteso.
 
-## Contribuire
+## Note
 
-I contributi sono benvenuti! Consulta le [linee guida per contribuire](CONTRIBUTING.md) per maggiori dettagli.
-
-## Licenza
-
-Distribuito con licenza MIT. Vedi il file [LICENSE](LICENSE) per i dettagli completi.
-
-## Autore
-
-**Nicolo Carello**
-- GitHub: [@carellonicolo](https://github.com/carellonicolo)
-- Website: [nicolocarello.it](https://nicolocarello.it)
-
----
-
-<sub>Sviluppato con l'ausilio dell'intelligenza artificiale.</sub>
-
-## Progetti Correlati
-
-Questo progetto fa parte di una collezione di strumenti didattici e applicazioni open-source:
-
-| Progetto | Descrizione |
-|:--|:--|
-| [DFA Visual Editor](https://github.com/carellonicolo/AFS) | Editor visuale per automi DFA |
-| [Turing Machine](https://github.com/carellonicolo/Turing-Machine) | Simulatore di Macchina di Turing |
-| [Scheduler](https://github.com/carellonicolo/Scheduler) | Simulatore di scheduling CPU |
-| [Subnet Calculator](https://github.com/carellonicolo/Subnet) | Calcolatore subnet IPv4/IPv6 |
-| [Base Converter](https://github.com/carellonicolo/base-converter) | Suite di conversione multi-funzionale |
-| [Gioco del Lotto](https://github.com/carellonicolo/giocodellotto) | Simulatore Lotto e SuperEnalotto |
-| [MicroASM](https://github.com/carellonicolo/microasm) | Simulatore assembly |
-| [Flow Charts](https://github.com/carellonicolo/flow-charts) | Editor di diagrammi di flusso |
-| [Cypher](https://github.com/carellonicolo/cypher) | Toolkit di crittografia |
-| [Snake](https://github.com/carellonicolo/snake) | Snake game retro |
-| [Pong](https://github.com/carellonicolo/pongcarello) | Pong game |
-| [IPSC Score](https://github.com/carellonicolo/IPSC) | Calcolatore punteggi IPSC |
-| [Quiz](https://github.com/carellonicolo/quiz) | Piattaforma quiz scolastici |
-| [Carello Hub](https://github.com/carellonicolo/carello-hub) | Dashboard educativa |
-| [Prof Carello](https://github.com/carellonicolo/prof-carello) | Gestionale lezioni private |
-| [DOCSITE](https://github.com/carellonicolo/DOCSITE) | Piattaforma documentale |
+- La configurazione limita **l'interfaccia e il motore lato client**: è uno
+  strumento di supporto per le verifiche, non un sistema anti-manomissione.
+- Log utilizzi: solo aperture + ultimo segnale (niente contenuto dei calcoli).

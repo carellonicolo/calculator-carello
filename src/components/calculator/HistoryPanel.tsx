@@ -5,6 +5,8 @@ interface Props {
   history: HistoryStore;
   /** Richiama la voce: salta alla sua modalità e la ricarica. */
   onRecall: (entry: HistoryEntry) => void;
+  /** true = dentro la sidebar dei Grafici (niente card autonoma). */
+  embedded?: boolean;
 }
 
 const MODE_ICON = {
@@ -14,9 +16,9 @@ const MODE_ICON = {
 } as const;
 
 /** Cronologia condivisa: calcoli, operazioni programmatore e funzioni salvate. */
-export function HistoryPanel({ history, onRecall }: Props) {
+export function HistoryPanel({ history, onRecall, embedded }: Props) {
   return (
-    <aside className="history-card">
+    <aside className={embedded ? 'history-card history-embed' : 'history-card'}>
       <div className="history-head">
         <span className="history-title">
           <History size={15} aria-hidden="true" /> Cronologia

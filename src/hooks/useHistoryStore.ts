@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import type { GraphScene } from '../lib/graphScene';
 
 export type HistoryMode = 'calc' | 'prog' | 'graph';
 
@@ -22,8 +23,10 @@ export interface HistoryEntry {
   at: number;
   /** Valore numerico decimale, per il richiamo (calc: float, prog: intero). */
   value?: string;
-  /** Dati di richiamo per i grafici. */
+  /** Richiamo grafici, voci vecchie: singola funzione. */
   graph?: { src: string; xMin: number; xMax: number };
+  /** Richiamo grafici, voci nuove: scena intera (funzioni, stili, slider, vista). */
+  scene?: GraphScene;
 }
 
 const LIMIT = 50;

@@ -1,5 +1,6 @@
 /**
- * Campionamento di f(x) per la modalità grafici.
+ * Campionamento di curve per la modalità grafici: esplicite y = f(x),
+ * parametriche x(t), y(t) e polari r(θ).
  * Riusa il compilatore dell'evaluator → i permessi del docente valgono anche qui.
  */
 
@@ -7,6 +8,7 @@ import {
   compile,
   CalcError,
   CalcPermissionError,
+  ALL_FUNCTIONS,
   type AngleMode,
   type EnginePermissions,
 } from './evaluator';
@@ -19,19 +21,44 @@ export interface GraphSample {
   yMax: number;
 }
 
-export function sampleFunction(
-  src: string,
-  opts: { angleMode: AngleMode; permissions: EnginePermissions; xMin: number; xMax: number; samples?: number }
-): GraphSample {
-  const { xMin, xMax } = opts;
-  if (!(xMax > xMin)) throw new CalcError('Intervallo x non valido');
-  const n = Math.max(64, Math.min(2000, opts.samples ?? 480));
+interface SampleOpts {
+  angleMode: AngleMode;
+  permissions: EnginePermissions;
+  xMin: number;
+  xMax: number;
+  samples?: number;
+  /** Valori extra (slider dei parametri: a, b, k…). */
+  vars?: Record<string, number>;
+}
 
+function clampSamples(n: number | undefined, fallback: number): number {
+  return Math.max(64, Math.min(2400, n ?? fallback));
+}
+
+/**
+ * Compila f(x) in una funzione numerica x → y.
+ * Lancia CalcError alla compilazione (sintassi) o alla valutazione (dominio,
+ * permessi): chi campiona decide cosa fare punto per punto.
+ */
+export function compileExplicit(
+  src: string,
+  opts: { angleMode: AngleMode; permissions: EnginePermissions; vars?: Record<string, number> }
+): (x: number) => number {
+  const extra = opts.vars ?? {};
   const f = compile(src, {
     angleMode: opts.angleMode,
     permissions: opts.permissions,
-    variables: ['x'],
+    variables: ['x', ...Object.keys(extra)],
   });
+  return (x: number) => f({ ...extra, x });
+}
+
+export function sampleFunction(src: string, opts: SampleOpts): GraphSample {
+  const { xMin, xMax } = opts;
+  if (!(xMax > xMin)) throw new CalcError('Intervallo x non valido');
+  const n = clampSamples(opts.samples, 480);
+
+  const f = compileExplicit(src, opts);
 
   const points: ({ x: number; y: number } | null)[] = [];
   const finite: number[] = [];
@@ -39,7 +66,7 @@ export function sampleFunction(
   for (let i = 0; i < n; i++) {
     const x = xMin + step * i;
     try {
-      const y = f({ x });
+      const y = f(x);
       if (Number.isFinite(y)) {
         points.push({ x, y });
         finite.push(y);
@@ -55,8 +82,110 @@ export function sampleFunction(
   }
   if (finite.length === 0) throw new CalcError('Nessun punto calcolabile in questo intervallo');
 
-  // Range y robusto: percentili 2–98 per non farsi schiacciare dagli asintoti.
-  const sorted = [...finite].sort((a, b) => a - b);
+  const { yMin, yMax } = robustRange(finite);
+  return { points, yMin, yMax };
+}
+
+/** Curva parametrica x(t), y(t) campionata su [tMin, tMax]. */
+export function sampleParametric(
+  xSrc: string,
+  ySrc: string,
+  opts: {
+    angleMode: AngleMode;
+    permissions: EnginePermissions;
+    tMin: number;
+    tMax: number;
+    samples?: number;
+    vars?: Record<string, number>;
+  }
+): { points: ({ x: number; y: number } | null)[] } {
+  const { tMin, tMax } = opts;
+  if (!(tMax > tMin)) throw new CalcError('Intervallo t non valido');
+  const n = clampSamples(opts.samples, 600);
+  const extra = opts.vars ?? {};
+  const common = {
+    angleMode: opts.angleMode,
+    permissions: opts.permissions,
+    variables: ['t', ...Object.keys(extra)],
+  };
+  const fx = compile(xSrc, common);
+  const fy = compile(ySrc, common);
+
+  const points: ({ x: number; y: number } | null)[] = [];
+  let finite = 0;
+  const step = (tMax - tMin) / (n - 1);
+  for (let i = 0; i < n; i++) {
+    const t = tMin + step * i;
+    try {
+      const x = fx({ ...extra, t });
+      const y = fy({ ...extra, t });
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        points.push({ x, y });
+        finite++;
+      } else {
+        points.push(null);
+      }
+    } catch (e) {
+      if (e instanceof CalcPermissionError) throw e;
+      if (e instanceof CalcError) points.push(null);
+      else throw e;
+    }
+  }
+  if (finite === 0) throw new CalcError('Nessun punto calcolabile in questo intervallo');
+  return { points };
+}
+
+/** Curva polare r(θ) campionata su [tMin, tMax] (θ nell'unità angolare attiva). */
+export function samplePolar(
+  rSrc: string,
+  opts: {
+    angleMode: AngleMode;
+    permissions: EnginePermissions;
+    tMin: number;
+    tMax: number;
+    samples?: number;
+    vars?: Record<string, number>;
+  }
+): { points: ({ x: number; y: number } | null)[] } {
+  const { tMin, tMax } = opts;
+  if (!(tMax > tMin)) throw new CalcError('Intervallo θ non valido');
+  const n = clampSamples(opts.samples, 720);
+  const extra = opts.vars ?? {};
+  const fr = compile(rSrc, {
+    angleMode: opts.angleMode,
+    permissions: opts.permissions,
+    // θ e t sono sinonimi: si può scrivere r = 1 + cos(θ) oppure 1 + cos(t).
+    variables: ['t', 'theta', ...Object.keys(extra)],
+  });
+  const toRad = opts.angleMode === 'deg' ? Math.PI / 180 : 1;
+
+  const points: ({ x: number; y: number } | null)[] = [];
+  let finite = 0;
+  const step = (tMax - tMin) / (n - 1);
+  for (let i = 0; i < n; i++) {
+    const t = tMin + step * i;
+    try {
+      const r = fr({ ...extra, t, theta: t });
+      if (Number.isFinite(r)) {
+        const a = t * toRad;
+        points.push({ x: r * Math.cos(a), y: r * Math.sin(a) });
+        finite++;
+      } else {
+        points.push(null);
+      }
+    } catch (e) {
+      if (e instanceof CalcPermissionError) throw e;
+      if (e instanceof CalcError) points.push(null);
+      else throw e;
+    }
+  }
+  if (finite === 0) throw new CalcError('Nessun punto calcolabile in questo intervallo');
+  return { points };
+}
+
+/** Range robusto (percentili 2–98 + margine) per non farsi schiacciare dagli asintoti. */
+export function robustRange(values: number[]): { yMin: number; yMax: number } {
+  const sorted = [...values].sort((a, b) => a - b);
   const lo = sorted[Math.floor(0.02 * (sorted.length - 1))];
   const hi = sorted[Math.ceil(0.98 * (sorted.length - 1))];
   let yMin = lo;
@@ -69,5 +198,27 @@ export function sampleFunction(
     yMin -= pad;
     yMax += pad;
   }
-  return { points, yMin, yMax };
+  return { yMin, yMax };
+}
+
+// ------------------------------------------------- Rilevamento dei parametri
+
+const RESERVED = new Set<string>([...ALL_FUNCTIONS, 'pi', 'e', 'x', 'y', 't', 'theta', 'ans', 'mem']);
+
+/**
+ * Scansione lessicale tollerante: i nomi di UNA lettera che non sono
+ * variabili/funzioni/costanti note sono candidati parametro (slider).
+ * "a x^2 + b" → ['a', 'b']. I nomi lunghi restano errori di sintassi normali.
+ */
+export function detectParams(src: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const re = /[a-zA-Zθπ][a-zA-Z0-9]*/g;
+  for (const m of src.matchAll(re)) {
+    const name = m[0] === 'θ' ? 'theta' : m[0] === 'π' ? 'pi' : m[0];
+    if (name.length !== 1 || RESERVED.has(name) || seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out.sort();
 }

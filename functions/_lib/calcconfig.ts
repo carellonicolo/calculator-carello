@@ -40,7 +40,19 @@ export interface CalcConfig {
     /** AND, OR, XOR, NOT, shift. */
     bitwise: boolean;
   };
-  graphing: { enabled: boolean };
+  graphing: {
+    enabled: boolean;
+    /** Curve parametriche x(t), y(t) e polari r(θ). */
+    paramPolar: boolean;
+    /** Punti notevoli: zeri, massimi/minimi, intersezioni. */
+    analysis: boolean;
+    /** Derivata, retta tangente, integrale/area. */
+    calculus: boolean;
+    /** Slider per i parametri (a, b, k…) con animazione. */
+    sliders: boolean;
+    /** Tabella dei valori x → f(x). */
+    table: boolean;
+  };
   statistics: { enabled: boolean };
   history: { enabled: boolean };
 }
@@ -56,7 +68,14 @@ export const DEFAULT_CONFIG: CalcConfig = {
     constants: true,
   },
   programmer: { enabled: true, baseConv: true, bitwise: true },
-  graphing: { enabled: true },
+  graphing: {
+    enabled: true,
+    paramPolar: true,
+    analysis: true,
+    calculus: true,
+    sliders: true,
+    table: true,
+  },
   statistics: { enabled: true },
   history: { enabled: true },
 };
@@ -97,7 +116,14 @@ export function sanitizeConfig(raw: unknown): CalcConfig {
       baseConv: asBool(prg.baseConv, d.programmer.baseConv),
       bitwise: asBool(prg.bitwise, d.programmer.bitwise),
     },
-    graphing: { enabled: asBool(gra.enabled, d.graphing.enabled) },
+    graphing: {
+      enabled: asBool(gra.enabled, d.graphing.enabled),
+      paramPolar: asBool(gra.paramPolar, d.graphing.paramPolar),
+      analysis: asBool(gra.analysis, d.graphing.analysis),
+      calculus: asBool(gra.calculus, d.graphing.calculus),
+      sliders: asBool(gra.sliders, d.graphing.sliders),
+      table: asBool(gra.table, d.graphing.table),
+    },
     statistics: { enabled: asBool(sta.enabled, d.statistics.enabled) },
     history: { enabled: asBool(his.enabled, d.history.enabled) },
   };
@@ -122,7 +148,10 @@ export function countRestrictions(c: CalcConfig): number {
       groups: [c.scientific.trig, c.scientific.logExp, c.scientific.powRoot, c.scientific.factorial, c.scientific.constants],
     },
     { enabled: c.programmer.enabled, groups: [c.programmer.baseConv, c.programmer.bitwise] },
-    { enabled: c.graphing.enabled, groups: [] },
+    {
+      enabled: c.graphing.enabled,
+      groups: [c.graphing.paramPolar, c.graphing.analysis, c.graphing.calculus, c.graphing.sliders, c.graphing.table],
+    },
     { enabled: c.statistics.enabled, groups: [] },
     { groups: [c.history.enabled] },
   ];

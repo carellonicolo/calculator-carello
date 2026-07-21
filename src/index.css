@@ -1266,3 +1266,453 @@ label {
 @media print {
   .btn, .sidebar-nav { display: none; }
 }
+
+/* ============================================================
+   GRAFICI — workspace stile GeoGebra
+   ============================================================ */
+.graph-stage {
+  max-width: 1500px;
+  margin: 0.75rem auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.graph-stage.is-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(10px, 2vw, 22px) 16px;
+  background: var(--bg);
+  overflow: auto;
+}
+
+.graph-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.graph-topbar-spacer { flex: 1; }
+
+.graph-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.graph-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.graph-chip:hover { color: var(--fg); border-color: var(--primary); }
+.graph-chip.active { background: var(--key-fn); color: var(--key-fn-text); border-color: var(--primary); }
+
+.graph-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.graph-side {
+  background: var(--glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: clamp(430px, calc(100vh - 300px), 720px);
+}
+
+.graph-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+
+.graph-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.graph-tab:hover { color: var(--fg); }
+.graph-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+.graph-side-scroll { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+
+.graph-side-foot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* Cronologia incorporata nella sidebar dei grafici */
+.history-embed {
+  width: auto;
+  max-height: none;
+  border: none;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* --------------------------------------------- Elenco funzioni */
+.fn-list { display: flex; flex-direction: column; gap: 8px; }
+
+.fn-row {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 8px;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.fn-row.has-error { border-color: var(--error); }
+.fn-row.is-hidden { opacity: 0.55; }
+
+.fn-main { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+.fn-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.fn-prefix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.fn-input {
+  flex: 1;
+  min-width: 88px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  padding: 6px 9px;
+}
+
+.fn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.fn-icon:hover { background: var(--readonly-bg); color: var(--fg); }
+.fn-icon.active { color: var(--primary); }
+
+.fn-error {
+  color: var(--error-text);
+  background: var(--error-bg);
+  font-size: 11.5px;
+  border-radius: 8px;
+  padding: 4px 8px;
+  margin-top: 6px;
+}
+
+.fn-detail {
+  border-top: 1px dashed var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fn-detail-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.fn-detail-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+
+.fn-swatches { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.fn-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s;
+}
+
+.fn-swatch:hover { transform: scale(1.15); }
+.fn-swatch.active { border-color: var(--card); box-shadow: 0 0 0 2px var(--fg); }
+
+.fn-check {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fn-check input { accent-color: var(--primary); }
+
+.fn-hint-inline { font-size: 11px; color: var(--muted); }
+
+.fn-add-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+
+.fn-counter { margin-left: auto; font-size: 11px; color: var(--muted); font-weight: 600; }
+
+/* Slider dei parametri */
+.slider-panel { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+
+.slider-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.slider-row { padding: 6px 2px; }
+
+.slider-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+
+.slider-name { font-family: 'JetBrains Mono', monospace; }
+
+.slider-row input[type='range'] { width: 100%; accent-color: var(--primary); margin: 6px 0 4px; }
+
+.slider-limits { display: flex; justify-content: space-between; gap: 6px; }
+.slider-limits input { font-size: 12px; padding: 3px 6px; }
+
+/* ------------------------------------------------------ Piano */
+.plot-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  overflow: hidden;
+  touch-action: none;
+  height: clamp(430px, calc(100vh - 300px), 720px);
+  min-width: 0;
+}
+
+.graph-stage.is-fs .plot-wrap,
+.graph-stage.is-fs .graph-side { height: calc(100vh - 108px); max-height: none; }
+
+.plot-svg {
+  display: block;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.plot-svg:active { cursor: grabbing; }
+
+.plot-grid-minor { stroke: var(--border); opacity: 0.45; stroke-width: 1; }
+.plot-grid-major { stroke: var(--border); stroke-width: 1; }
+.plot-axis { stroke: var(--muted); stroke-width: 1.5; }
+.plot-tick { fill: var(--muted); }
+.plot-notable { fill: var(--card); stroke-width: 2.2; }
+.plot-handle { cursor: ew-resize; }
+
+.plot-tip,
+.plot-chip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--fg);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+}
+
+.plot-tools {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 6;
+}
+
+.plot-tool {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.plot-tool:hover:not(:disabled) { color: var(--fg); border-color: var(--primary); }
+.plot-tool.active { color: var(--primary); border-color: var(--primary); background: var(--key-fn); }
+.plot-tool:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.plot-tool-txt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.plot-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  gap: 4px;
+  pointer-events: none;
+  padding: 20px;
+}
+
+.plot-empty span { font-size: 12px; opacity: 0.85; }
+
+/* ------------------------------------------------- Tabella valori */
+.vtable-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.vtable-controls .field { flex: 1 1 130px; margin: 0; }
+.vtable-controls .field-xs { flex: 0 1 84px; }
+
+.vtable-scroll {
+  max-height: 430px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.vtable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+}
+
+.vtable th {
+  position: sticky;
+  top: 0;
+  background: var(--readonly-bg);
+  text-align: right;
+  padding: 7px 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  z-index: 1;
+}
+
+.vtable td { text-align: right; padding: 5px 12px; border-top: 1px solid var(--border); }
+.vtable tbody tr:first-child td { border-top: none; }
+.vtable tbody tr:hover td { background: var(--readonly-bg); }
+
+/* -------------------------------------------------- Dialog export */
+.gdlg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(20, 16, 12, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.gdlg {
+  width: min(540px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.gdlg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+.gdlg-title { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 15px; }
+
+.gdlg-preview {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: repeating-conic-gradient(rgba(140, 130, 115, 0.16) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+  min-height: 60px;
+}
+
+.gdlg-grid { display: flex; flex-direction: column; gap: 10px; }
+
+.gdlg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gdlg-row .fn-detail-label { min-width: 78px; }
+
+.gdlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+/* ------------------------------------------------------ Responsive */
+@media (max-width: 940px) {
+  .graph-body { display: flex; flex-direction: column; }
+  .plot-wrap { order: 1; height: clamp(320px, 52vh, 520px); }
+  .graph-side { order: 2; max-height: 440px; }
+  .graph-btn-label { display: none; }
+  .graph-stage.is-fs .plot-wrap { height: clamp(320px, 56vh, 620px); }
+  .graph-stage.is-fs .graph-side { height: auto; max-height: 38vh; }
+}

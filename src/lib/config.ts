@@ -119,9 +119,15 @@ export const AREAS: AreaMeta[] = [
   {
     area: 'graphing',
     label: 'Grafici',
-    hint: 'Grafico di y = f(x)',
+    hint: 'Piano cartesiano con più funzioni sovrapponibili',
     hasMaster: true,
-    groups: [],
+    groups: [
+      { area: 'graphing', key: 'paramPolar', label: 'Curve parametriche e polari', hint: 'x(t), y(t) · r(θ)' },
+      { area: 'graphing', key: 'analysis', label: 'Punti notevoli', hint: 'zeri · max/min · intersezioni' },
+      { area: 'graphing', key: 'calculus', label: 'Derivate e integrali', hint: 'f′(x) · tangente · area sotto la curva' },
+      { area: 'graphing', key: 'sliders', label: 'Parametri con slider', hint: 'a·x² + b → slider animabili' },
+      { area: 'graphing', key: 'table', label: 'Tabella dei valori', hint: 'x → f(x) con passo a scelta' },
+    ],
   },
   {
     area: 'statistics',

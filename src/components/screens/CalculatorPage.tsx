@@ -11,7 +11,8 @@ import { RestrictionBadge } from '../calculator/RestrictionBadge';
 import { StandardPad } from '../calculator/StandardPad';
 import { ScientificPad } from '../calculator/ScientificPad';
 import { ProgrammerPanel } from '../calculator/ProgrammerPanel';
-import { GraphPanel } from '../calculator/GraphPanel';
+import { GraphWorkspace } from '../calculator/graph/GraphWorkspace';
+import { PALETTE } from '../../lib/graphScene';
 import { StatsPanel } from '../calculator/StatsPanel';
 import { HistoryPanel } from '../calculator/HistoryPanel';
 
@@ -22,7 +23,7 @@ export function CalculatorPage() {
   const calc = useCalculator(config, history);
   const [mode, setMode] = useState<ModeId>('standard');
   const [progRecall, setProgRecall] = useState<{ nonce: number; value: string }>();
-  const [graphRecall, setGraphRecall] = useState<{ nonce: number; src: string; xMin: number; xMax: number }>();
+  const [graphRecall, setGraphRecall] = useState<{ nonce: number; payload: unknown }>();
   const recallNonce = useRef(0);
 
   const modes = visibleModes(config);
@@ -91,17 +92,26 @@ export function CalculatorPage() {
       setProgRecall({ nonce: ++recallNonce.current, value: entry.value ?? '0' });
       return;
     }
-    if (!entry.graph) return;
     if (!modes.includes('graphing')) {
       toast('info', 'La modalità Grafici è disattivata dal docente.');
       return;
     }
+    // Voci nuove: scena intera. Voci vecchie: singola funzione convertita.
+    const payload =
+      entry.scene ??
+      (entry.graph
+        ? {
+            funcs: [{ kind: 'explicit', src: entry.graph.src, color: PALETTE[0] }],
+            view: { xMin: entry.graph.xMin, xMax: entry.graph.xMax, yMin: -6.25, yMax: 6.25 },
+          }
+        : null);
+    if (!payload) return;
     setMode('graphing');
-    setGraphRecall({ nonce: ++recallNonce.current, ...entry.graph });
+    setGraphRecall({ nonce: ++recallNonce.current, payload });
   };
 
   const wide = mode !== 'standard';
-  const showHistory = config.history.enabled && mode !== 'statistics';
+  const showHistory = config.history.enabled && mode !== 'statistics' && mode !== 'graphing';
   const restricted = countRestrictions(config) > 0 && !user?.isTeacher;
 
   return (
@@ -114,34 +124,49 @@ export function CalculatorPage() {
 
       <ModeTabs visible={modes} mode={mode} onChange={setMode} />
 
-      <div className="calc-layout">
-        <motion.div layout className={`calc-card${wide ? ' is-wide' : ''}`}>
-          {(mode === 'standard' || mode === 'scientific') && (
-            <Display calc={calc} showAngle={mode === 'scientific' && config.scientific.trig} />
-          )}
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={mode + `:${configVersion}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.16 }}
-            >
-              {mode === 'standard' && <StandardPad calc={calc} config={config} />}
-              {mode === 'scientific' && <ScientificPad calc={calc} config={config} />}
-              {mode === 'programmer' && (
-                <ProgrammerPanel config={config} history={history} recall={progRecall} />
-              )}
-              {mode === 'graphing' && (
-                <GraphPanel config={config} history={history} recall={graphRecall} />
-              )}
-              {mode === 'statistics' && <StatsPanel />}
-            </motion.div>
-          </AnimatePresence>
+      {mode === 'graphing' ? (
+        <motion.div
+          key="graph"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+        >
+          <GraphWorkspace
+            config={config}
+            history={history}
+            userEmail={user?.email ?? 'anon'}
+            userName={user?.name ?? 'Studente'}
+            recall={graphRecall}
+            onRecallEntry={recallEntry}
+          />
         </motion.div>
+      ) : (
+        <div className="calc-layout">
+          <motion.div layout className={`calc-card${wide ? ' is-wide' : ''}`}>
+            {(mode === 'standard' || mode === 'scientific') && (
+              <Display calc={calc} showAngle={mode === 'scientific' && config.scientific.trig} />
+            )}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={mode + `:${configVersion}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.16 }}
+              >
+                {mode === 'standard' && <StandardPad calc={calc} config={config} />}
+                {mode === 'scientific' && <ScientificPad calc={calc} config={config} />}
+                {mode === 'programmer' && (
+                  <ProgrammerPanel config={config} history={history} recall={progRecall} />
+                )}
+                {mode === 'statistics' && <StatsPanel />}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
 
-        {showHistory && <HistoryPanel history={history} onRecall={recallEntry} />}
-      </div>
+          {showHistory && <HistoryPanel history={history} onRecall={recallEntry} />}
+        </div>
+      )}
     </>
   );
 }

@@ -73,6 +73,17 @@ function tokenize(src: string): Tok[] {
       i++;
       continue;
     }
+    // Simboli greci di uso comune: θ come variabile, π come costante.
+    if (c === 'θ') {
+      toks.push({ kind: 'ident', name: 'theta' });
+      i++;
+      continue;
+    }
+    if (c === 'π') {
+      toks.push({ kind: 'ident', name: 'pi' });
+      i++;
+      continue;
+    }
     if ((c >= '0' && c <= '9') || c === '.') {
       let j = i;
       let dots = 0;

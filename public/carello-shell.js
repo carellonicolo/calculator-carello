@@ -78,9 +78,10 @@
 
   // Tema: replica ESATTA della logica dell'app (hook useTheme + bootstrap in
   // index.html). Sorgente di verità = attributo data-theme su <html>, classe
-  // .dark e chiave localStorage 'calc_theme'. Così il pulsante tema della
-  // shell sostituisce il vecchio ThemeToggle senza toccare la logica React.
-  const THEME_KEY = 'calc_theme';
+  // .dark e chiave localStorage dell'app. La CHIAVE arriva dall'attributo
+  // data-theme-key (es. "calc_theme", "ccna1_theme"): così questo file è
+  // IDENTICO in tutte le app e si sincronizza con un semplice copia-file.
+  let THEME_KEY = 'carello_theme';
   function readTheme() {
     return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   }
@@ -111,6 +112,27 @@
   function readProfileAvatar() {
     const obj = readProfile();
     return obj && typeof obj.a === 'string' && obj.a.trim() ? obj.a.trim() : null;
+  }
+  // Ruolo (campo 'r': student | teacher | super_admin) e classe approvata
+  // (campo 'c', solo studenti). SOLO visualizzazione: l'autorizzazione vera
+  // resta sul JWT verificato lato server. Sessioni precedenti all'introduzione
+  // dei campi non li hanno: si rigenerano al prossimo login.
+  function readProfileRole() {
+    const obj = readProfile();
+    return obj && typeof obj.r === 'string' && obj.r ? obj.r : null;
+  }
+  function readProfileClass() {
+    const obj = readProfile();
+    return obj && typeof obj.c === 'string' && obj.c.trim() ? obj.c.trim() : null;
+  }
+  function roleLabel(role) {
+    if (role === 'super_admin') return 'Docente · admin';
+    if (role === 'teacher') return 'Docente';
+    if (role === 'student') return 'Studente';
+    return '';
+  }
+  function isTeacherRole(role) {
+    return role === 'teacher' || role === 'super_admin';
   }
 
   async function fetchHub(hubUrl) {
@@ -151,14 +173,24 @@
 
   class CarelloShell extends HTMLElement {
     async connectedCallback() {
+      // Chiave del tema PRIMA di qualsiasi lettura/scrittura del tema.
+      THEME_KEY = this.getAttribute('data-theme-key') || THEME_KEY;
       const appName = this.getAttribute('app-name') || 'App';
       const appIcon = this.getAttribute('app-icon') || 'AppWindow';
       const accent  = this.getAttribute('accent') || '#E0662B';
       const profileName = readProfileName();
       const avatarUrl = readProfileAvatar();
+      const role = readProfileRole();
+      const classe = readProfileClass();
       const user    = (profileName ? (initials(profileName) || '').toUpperCase() : '') || this.getAttribute('user') || 'NC';
       const sbUrl   = this.getAttribute('data-hub-url') || '';
       const authUrl = this.getAttribute('data-auth-url') || '';
+      // Brand "Prof. Carello" → Hub principale della piattaforma.
+      const hubHome = sbUrl || 'https://www.nicolocarello.it';
+      // Console dell'app (es. /admin): il pulsante compare SOLO ai docenti
+      // (ruolo dal cookie nc_profile; la pagina resta comunque protetta lato server).
+      const consoleUrl = this.getAttribute('data-console-url') || '';
+      const consoleLabel = this.getAttribute('data-console-label') || 'Console docente';
       // Voce opzionale del dropdown account verso una pagina dell'app (es. la
       // dashboard personale). Compare solo se l'app la fornisce: le altre app
       // del Hub restano invariate.
@@ -168,7 +200,35 @@
       const hideTheme = this.hasAttribute('data-hide-theme');
 
       this.attachShadow({ mode: 'open' });
-      this.shadowRoot.innerHTML = this.template(appName, appIcon, accent, user);
+      this.shadowRoot.innerHTML = this.template(appName, appIcon, accent, user, hubHome);
+
+      // Pulsante console (header): visibile solo se l'app dichiara la URL
+      // E l'utente loggato è un docente. Gli studenti non lo vedono proprio.
+      const consoleBtn = this.shadowRoot.getElementById('consoleBtn');
+      if (consoleBtn && consoleUrl && isTeacherRole(role)) {
+        consoleBtn.href = consoleUrl;
+        consoleBtn.title = consoleLabel;
+        const cl = this.shadowRoot.getElementById('consoleLabel');
+        if (cl) cl.textContent = consoleLabel;
+        consoleBtn.style.display = '';
+      }
+
+      // Testata del dropdown account: nome + ruolo (+ classe per gli studenti).
+      const mheadName = this.shadowRoot.getElementById('mheadName');
+      const mheadRole = this.shadowRoot.getElementById('mheadRole');
+      const mhead = this.shadowRoot.getElementById('mhead');
+      if (mhead && profileName) {
+        if (mheadName) mheadName.textContent = profileName;
+        const parts = [];
+        const rl = roleLabel(role);
+        if (rl) parts.push(rl);
+        if (classe) parts.push(classe);
+        if (mheadRole) {
+          mheadRole.textContent = parts.join(' · ');
+          mheadRole.style.display = parts.length ? '' : 'none';
+        }
+        mhead.style.display = '';
+      }
 
       // Propaga il tema dentro lo Shadow DOM: la classe 'dark-shell' sull'host
       // attiva le variabili scure (lo Shadow DOM isola gli stili, quindi il
@@ -183,8 +243,21 @@
       // icona del breadcrumb
       loadIcon(appIcon).then((svg) => {
         const slot = this.shadowRoot.getElementById('crumbIcon');
-        if (svg && slot) { slot.innerHTML = svg.replace('stroke="white"', 'stroke="' + accent + '"'); }
+        // currentColor: l'icona segue --primary-color (tema colore app) via CSS.
+        if (svg && slot) { slot.innerHTML = svg.replace('stroke="white"', 'stroke="currentColor"'); }
       });
+
+      // Divisore dello slot app-actions: visibile solo se l'app ci mette qualcosa
+      // (es. Flow Chart: esempi, lingua, help). Le altre app non lo vedono.
+      const appActionsWrap = this.shadowRoot.getElementById('appActions');
+      const appActionsSlot = this.shadowRoot.getElementById('appActionsSlot');
+      if (appActionsWrap && appActionsSlot) {
+        const syncSlot = () => {
+          appActionsWrap.classList.toggle('has-content', appActionsSlot.assignedElements().length > 0);
+        };
+        syncSlot();
+        appActionsSlot.addEventListener('slotchange', syncSlot);
+      }
 
       const btn = this.shadowRoot.getElementById('waffle');
       const pop = this.shadowRoot.getElementById('pop');
@@ -421,7 +494,7 @@
       this.loadTileIcons(grid, apps);
     }
 
-    template(appName, appIcon, accent, user) {
+    template(appName, appIcon, accent, user, hubHome) {
       return `
       <style>
         /* Palette: variabili con default chiari; il blocco :host(.dark-shell)
@@ -449,32 +522,58 @@
         .bar{ height:60px; background:var(--c-bar-bg); border-bottom:1px solid var(--c-bar-bd);
               display:flex; align-items:center; gap:16px; padding:0 20px; }
         .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
-        .logo{ width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,#ff8a4c,#e0662b);
-               display:flex; align-items:center; justify-content:center; box-shadow:0 4px 11px rgba(224,102,43,.38); flex-shrink:0; }
+        /* Brand cliccabile → Hub principale */
+        .brandlink{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none;
+                    border-radius:10px; padding:4px 8px 4px 4px; margin-left:-4px; transition:background .15s; }
+        .brandlink:hover{ background:var(--c-hover); }
+        /* "Header adattivo": l'accento (logo, breadcrumb, waffle, avatar, console)
+           segue le custom properties --theme-accent / --primary-color se l'app le
+           definisce (es. Flow Chart); il fallback resta l'arancio Carello. */
+        .logo{ width:34px; height:34px; border-radius:11px;
+               background:linear-gradient(135deg, var(--theme-accent, #ff8a4c), var(--primary-color, #e0662b));
+               display:flex; align-items:center; justify-content:center; box-shadow:0 4px 11px rgba(0,0,0,.22); flex-shrink:0; }
         .name{ font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--c-ink); white-space:nowrap; }
         .sep{ color:var(--c-sep); }
-        .crumb{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600; white-space:nowrap; color:${accent}; text-decoration:none; cursor:pointer; border-radius:8px; padding:3px 7px; transition:background .15s; }
+        .crumb{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600; white-space:nowrap; color:var(--primary-color, ${accent}); text-decoration:none; cursor:pointer; border-radius:8px; padding:3px 7px; transition:background .15s; }
         .crumb:hover{ background:var(--c-crumb-hover); }
-        #crumbIcon{ display:inline-flex; width:18px; height:18px; }
-        #crumbIcon svg{ width:18px; height:18px; }
+        #crumbIcon{ display:inline-flex; width:18px; height:18px; color:var(--primary-color, ${accent}); }
+        #crumbIcon svg{ width:18px; height:18px; stroke:currentColor; }
         .spacer{ flex:1; }
         .actions{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+        /* Slot per i controlli specifici dell'app (es. Flow Chart: esempi,
+           tema colore, lingua). Vivono nel light DOM con gli stili dell'app;
+           il divisore compare solo se lo slot ha contenuto. */
+        .app-actions{ display:flex; align-items:center; }
+        .app-actions.has-content::after{ content:''; width:1px; height:24px; background:var(--c-sep); margin:0 8px 0 4px; }
+        ::slotted(*){ display:flex; align-items:center; gap:4px; }
+        /* Pulsante console (solo docenti): pilloletta con accento dell'app */
+        .consolebtn{ display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 13px;
+                     margin-right:4px; border-radius:999px; text-decoration:none; font-size:12.5px; font-weight:700;
+                     color:var(--primary-color, ${accent}); background:var(--c-waffle-bg); border:1px solid transparent; transition:filter .15s; }
+        .consolebtn:hover{ filter:brightness(.96); }
+        .consolebtn svg{ width:16px; height:16px; flex-shrink:0; }
         .icbtn{ width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center;
                 color:var(--c-icon); background:transparent; border:none; cursor:pointer; }
         .icbtn:hover{ background:var(--c-hover); }
         .icbtn svg{ width:21px; height:21px; }
-        .waffle{ color:#E0662B; background:var(--c-waffle-bg); }
-        .avatar{ width:34px; height:34px; border-radius:999px; background:linear-gradient(135deg,#ff9a5c,#e0662b);
+        .waffle{ color:var(--primary-color, #E0662B); background:var(--c-waffle-bg); }
+        .avatar{ width:34px; height:34px; border-radius:999px; background:linear-gradient(135deg, var(--theme-accent, #ff9a5c), var(--primary-color, #e0662b));
                  color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; margin-left:4px;
                  border:none; cursor:pointer; font-family:inherit; overflow:hidden; padding:0; }
         .avatar img{ width:100%; height:100%; border-radius:999px; object-fit:cover; display:block; }
         .avatar svg{ width:20px; height:20px; }
         /* Nessun utente connesso: slot neutro (no gradiente arancio), sagoma grigia. */
         .avatar.avatar-empty{ background:var(--c-hover); color:var(--c-icon); border:1px solid var(--c-bar-bd); }
-        .menu{ position:absolute; top:46px; right:0; width:184px; background:var(--c-pop-bg); border:1px solid var(--c-pop-bd);
+        .menu{ position:absolute; top:46px; right:0; width:216px; background:var(--c-pop-bg); border:1px solid var(--c-pop-bd);
                border-radius:14px; box-shadow:var(--c-menu-shadow); padding:6px; z-index:1000;
                opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:.16s ease; }
         .menu.open{ opacity:1; transform:none; pointer-events:auto; }
+        /* Testata del dropdown: chi sei (nome + ruolo · classe) */
+        .mhead{ padding:9px 11px 8px; border-bottom:1px solid var(--c-pop-bd); margin-bottom:5px; }
+        .mhead b{ display:block; font-size:13.5px; color:var(--c-ink); font-weight:700; line-height:1.25;
+                  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .mrole{ display:block; margin-top:2px; font-size:11px; font-weight:600; color:var(--c-badge-fg);
+                text-transform:uppercase; letter-spacing:.04em; }
         .mitem{ display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:9px; text-decoration:none;
                 color:var(--c-mitem); font-size:13px; font-weight:500; cursor:pointer; }
         .mitem:hover{ background:var(--c-mitem-hover); }
@@ -507,27 +606,43 @@
         .mini{ display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:3px; width:100%; height:100%; }
         .mini i{ display:block; border-radius:4px; min-height:0; }
         /* Mobile: la barra non ha spazio per "Prof. Carello / Nome app" + azioni.
-           Nascondiamo il nome-brand (resta il logo) e stringiamo le spaziature, così
-           logo + nome-app + controlli stanno senza sovrapporsi. Il breadcrumb non
-           deborda più (min-width:0 + overflow:hidden). */
-        @media (max-width:560px){
-          .bar{ gap:8px; padding:0 12px; }
+           Nascondiamo il nome-brand (resta il logo) e stringiamo tutto, così
+           logo + nome-app + controlli stanno senza sovrapporsi. */
+        @media (max-width:640px){
+          .bar{ padding:0 10px; gap:6px; }
           .name, .sep{ display:none; }
-          .brand{ overflow:hidden; }
-          .crumb{ min-width:0; overflow:hidden; }
+          .brand{ flex-shrink:1; overflow:hidden; }
+          .brandlink{ padding:4px; margin-left:0; }
+          .crumb{ font-size:13.5px; padding:3px 4px; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+          .actions{ gap:2px; flex-shrink:0; }
+          .app-actions.has-content::after{ display:none; }
+          .icbtn{ width:34px; height:34px; }
+          .icbtn svg{ width:19px; height:19px; }
+          .logo{ width:30px; height:30px; }
+          .avatar{ width:30px; height:30px; }
+          /* Console: resta solo l'icona (il title spiega cos'è) */
+          .consolebtn{ padding:0; width:34px; height:30px; justify-content:center; margin-right:2px; }
+          .consolebtn span{ display:none; }
         }
       </style>
       <div class="bar">
         <div class="brand">
-          <span class="logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-          </span>
-          <span class="name">Prof. Carello</span>
+          <a class="brandlink" href="${hubHome}" title="Vai all'Hub — tutte le app">
+            <span class="logo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </span>
+            <span class="name">Prof. Carello</span>
+          </a>
           <span class="sep">/</span>
           <a class="crumb" href="/" title="Torna alla home"><span id="crumbIcon"></span>${appName}</a>
         </div>
         <div class="spacer"></div>
         <div class="actions">
+          <span class="app-actions" id="appActions"><slot name="app-actions" id="appActionsSlot"></slot></span>
+          <a class="consolebtn" id="consoleBtn" href="#" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <span id="consoleLabel">Console docente</span>
+          </a>
           <button class="icbtn" id="themeBtn" title="Tema">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
           </button>
@@ -549,6 +664,10 @@
           <div class="wrap">
             <button class="avatar" id="avatarBtn" title="Account">${user}</button>
             <div class="menu" id="accMenu">
+              <div class="mhead" id="mhead" style="display:none">
+                <b id="mheadName"></b>
+                <span class="mrole" id="mheadRole"></span>
+              </div>
               <a class="mitem" id="dashLink" href="#" target="_top" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
                 <span id="dashLabel">Dashboard</span>

@@ -1,23 +1,31 @@
-import { History, Trash2 } from 'lucide-react';
-import type { Calculator } from '../../hooks/useCalculator';
+import { Binary, Calculator, ChartSpline, History, Trash2 } from 'lucide-react';
+import type { HistoryEntry, HistoryStore } from '../../hooks/useHistoryStore';
 
 interface Props {
-  calc: Calculator;
+  history: HistoryStore;
+  /** Richiama la voce: salta alla sua modalità e la ricarica. */
+  onRecall: (entry: HistoryEntry) => void;
 }
 
-/** Cronologia locale dei calcoli: un clic riprende il risultato. */
-export function HistoryPanel({ calc }: Props) {
+const MODE_ICON = {
+  calc: Calculator,
+  prog: Binary,
+  graph: ChartSpline,
+} as const;
+
+/** Cronologia condivisa: calcoli, operazioni programmatore e funzioni salvate. */
+export function HistoryPanel({ history, onRecall }: Props) {
   return (
     <aside className="history-card">
       <div className="history-head">
         <span className="history-title">
           <History size={15} aria-hidden="true" /> Cronologia
         </span>
-        {calc.history.length > 0 && (
+        {history.entries.length > 0 && (
           <button
             type="button"
             className="btn btn-ghost btn-sm btn-inline"
-            onClick={calc.clearHistory}
+            onClick={history.clear}
             title="Svuota cronologia"
           >
             <Trash2 size={13} /> Svuota
@@ -25,21 +33,32 @@ export function HistoryPanel({ calc }: Props) {
         )}
       </div>
       <div className="history-scroll">
-        {calc.history.length === 0 ? (
-          <div className="history-empty">I calcoli confermati con “=” compaiono qui.</div>
+        {history.entries.length === 0 ? (
+          <div className="history-empty">
+            I calcoli confermati con “=” (e le funzioni salvate nei grafici) compaiono qui.
+          </div>
         ) : (
-          calc.history.map((h) => (
-            <button
-              key={h.at}
-              type="button"
-              className="history-item"
-              onClick={() => calc.recallHistory(h)}
-              title="Riprendi questo risultato"
-            >
-              <div className="history-expr">{h.expr} =</div>
-              <div className="history-res">{h.result.replace('.', ',')}</div>
-            </button>
-          ))
+          history.entries.map((h) => {
+            const Icon = MODE_ICON[h.mode];
+            return (
+              <button
+                key={h.at}
+                type="button"
+                className="history-item"
+                onClick={() => onRecall(h)}
+                title="Riprendi questa voce"
+              >
+                <div className="history-expr">
+                  <Icon size={11} aria-hidden="true" className="history-mode-ico" />
+                  {h.expr}
+                  {h.mode !== 'graph' && ' ='}
+                </div>
+                <div className={`history-res${h.mode === 'graph' ? ' is-range' : ''}`}>
+                  {h.mode === 'calc' ? h.result.replace('.', ',') : h.result}
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
     </aside>

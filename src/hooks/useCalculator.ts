@@ -5,9 +5,10 @@
  * display): il backspace toglie l'ultimo token, i tasti vietati non esistono
  * proprio. L'ultimo risultato ("ans") e la memoria ("mem") viaggiano come
  * variabili del motore, così restano esatti anche in notazione esponenziale.
+ * La cronologia vive nello store condiviso (useHistoryStore).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   CalcError,
   evaluate,
@@ -15,35 +16,13 @@ import {
   type AngleMode,
 } from '../lib/engine/evaluator';
 import { enginePermissions, type CalcConfig } from '../lib/config';
+import type { HistoryEntry, HistoryStore } from './useHistoryStore';
 
 export interface UiToken {
   src: string;
   disp: string;
   /** true per il segno inserito dal tasto ± (per poterlo ri-togliere). */
   signToggle?: boolean;
-}
-
-export interface HistoryEntry {
-  expr: string;
-  result: string;
-  at: number;
-}
-
-const HISTORY_LIMIT = 50;
-
-function historyKey(userEmail: string): string {
-  return `calc_history_v1:${userEmail}`;
-}
-
-function loadHistory(userEmail: string): HistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(historyKey(userEmail));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as HistoryEntry[];
-    return Array.isArray(parsed) ? parsed.slice(0, HISTORY_LIMIT) : [];
-  } catch {
-    return [];
-  }
 }
 
 export interface Calculator {
@@ -58,7 +37,6 @@ export interface Calculator {
   angleMode: AngleMode;
   setAngleMode: (m: AngleMode) => void;
   memory: number | null;
-  history: HistoryEntry[];
   pressDigit: (d: string) => void;
   pressToken: (src: string, disp?: string) => void;
   toggleSign: () => void;
@@ -68,18 +46,17 @@ export interface Calculator {
   memClear: () => void;
   memRecall: () => void;
   memAdd: (sign: 1 | -1) => void;
+  /** Ricarica una voce di cronologia (mode 'calc') come risultato corrente. */
   recallHistory: (entry: HistoryEntry) => void;
-  clearHistory: () => void;
 }
 
-export function useCalculator(config: CalcConfig, userEmail: string): Calculator {
+export function useCalculator(config: CalcConfig, history: HistoryStore): Calculator {
   const [tokens, setTokens] = useState<UiToken[]>([]);
   const [committed, setCommitted] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shakeNonce, setShakeNonce] = useState(0);
   const [angleMode, setAngleMode] = useState<AngleMode>('deg');
   const [memory, setMemory] = useState<number | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory(userEmail));
   const justEvaluated = useRef(false);
   const ansValue = useRef<number | null>(null);
 
@@ -96,30 +73,6 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
     if (memory !== null) vars.mem = memory;
     return vars;
   }, [memory]);
-
-  // Cronologia: persistenza + azzeramento quando il docente la disattiva.
-  useEffect(() => {
-    if (!config.history.enabled) {
-      setHistory([]);
-      try {
-        localStorage.removeItem(historyKey(userEmail));
-      } catch {
-        // ignora
-      }
-    }
-  }, [config.history.enabled, userEmail]);
-
-  const persistHistory = useCallback(
-    (entries: HistoryEntry[]) => {
-      setHistory(entries);
-      try {
-        localStorage.setItem(historyKey(userEmail), JSON.stringify(entries));
-      } catch {
-        // storage pieno o bloccato: pazienza
-      }
-    },
-    [userEmail]
-  );
 
   const exprText = useMemo(() => tokens.map((t) => t.disp).join(''), [tokens]);
 
@@ -190,7 +143,7 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
       const insertAt = i + 1;
       const before = ts[i];
       if (before?.signToggle) {
-        // C'era già il meno del ±: toglilo (e l'eventuale parentesi aperta).
+        // C'era già il meno del ±: toglilo.
         return [...ts.slice(0, i), ...ts.slice(i + 1)];
       }
       const minus: UiToken = { src: '-', disp: '−', signToggle: true };
@@ -225,15 +178,13 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
       setCommitted(formatted);
       setError(null);
       justEvaluated.current = true;
-      if (config.history.enabled) {
-        persistHistory([{ expr: exprText, result: formatted, at: Date.now() }, ...history].slice(0, HISTORY_LIMIT));
-      }
+      history.add({ mode: 'calc', expr: exprText, result: formatted, value: String(value) });
       setTokens([{ src: 'ans', disp: formatted }]);
     } catch (e) {
       setError(e instanceof CalcError ? e.message : 'Errore di calcolo');
       setShakeNonce((n) => n + 1);
     }
-  }, [tokens, evalOpts, varValues, config.history.enabled, exprText, history, persistHistory]);
+  }, [tokens, evalOpts, varValues, exprText, history]);
 
   const currentValue = useCallback((): number | null => {
     if (justEvaluated.current && ansValue.current !== null) return ansValue.current;
@@ -263,23 +214,16 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
     setTokens((ts) => [...ts, { src: 'mem', disp: formatResult(memory) }]);
   }, [memory, startFreshIfNeeded]);
 
-  const recallHistory = useCallback(
-    (entry: HistoryEntry) => {
-      setError(null);
-      justEvaluated.current = false;
-      setCommitted(null);
-      const value = parseFloat(entry.result);
-      if (Number.isFinite(value)) {
-        ansValue.current = value;
-        setTokens([{ src: 'ans', disp: entry.result }]);
-      }
-    },
-    []
-  );
-
-  const clearHistory = useCallback(() => {
-    persistHistory([]);
-  }, [persistHistory]);
+  const recallHistory = useCallback((entry: HistoryEntry) => {
+    setError(null);
+    justEvaluated.current = false;
+    setCommitted(null);
+    const value = parseFloat(entry.value ?? entry.result);
+    if (Number.isFinite(value)) {
+      ansValue.current = value;
+      setTokens([{ src: 'ans', disp: formatResult(value) }]);
+    }
+  }, []);
 
   return {
     tokens,
@@ -291,7 +235,6 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
     angleMode,
     setAngleMode,
     memory,
-    history: config.history.enabled ? history : [],
     pressDigit,
     pressToken,
     toggleSign,
@@ -302,6 +245,5 @@ export function useCalculator(config: CalcConfig, userEmail: string): Calculator
     memRecall,
     memAdd,
     recallHistory,
-    clearHistory,
   };
 }

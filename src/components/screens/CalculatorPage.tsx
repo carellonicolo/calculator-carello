@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { Settings2 } from 'lucide-react';
 import { useAppState } from '../../hooks/useAppState';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useHistoryStore, type HistoryEntry } from '../../hooks/useHistoryStore';
 import { useToast } from '../ui/Toast';
-import { MODES, visibleModes, type ModeId } from '../../lib/config';
+import { countRestrictions, MODES, visibleModes, type ModeId } from '../../lib/config';
 import { Display } from '../calculator/Display';
 import { ModeTabs } from '../calculator/ModeTabs';
 import { RestrictionBadge } from '../calculator/RestrictionBadge';
@@ -19,8 +18,12 @@ import { HistoryPanel } from '../calculator/HistoryPanel';
 export function CalculatorPage() {
   const { user, config, configVersion } = useAppState();
   const { toast } = useToast();
-  const calc = useCalculator(config, user?.email ?? 'anon');
+  const history = useHistoryStore(user?.email ?? 'anon', config.history.enabled);
+  const calc = useCalculator(config, history);
   const [mode, setMode] = useState<ModeId>('standard');
+  const [progRecall, setProgRecall] = useState<{ nonce: number; value: string }>();
+  const [graphRecall, setGraphRecall] = useState<{ nonce: number; src: string; xMin: number; xMax: number }>();
+  const recallNonce = useRef(0);
 
   const modes = visibleModes(config);
   const modesKey = modes.join(',');
@@ -38,10 +41,8 @@ export function CalculatorPage() {
   }, [modesKey, toast]);
 
   // Notifica discreta quando la configurazione cambia in corsa.
-  const firstVersion = useRef(true);
   useEffect(() => {
     if (configVersion === 0) return;
-    if (firstVersion.current) firstVersion.current = false;
     toast('info', 'Il docente ha aggiornato la configurazione della calcolatrice.');
   }, [configVersion, toast]);
 
@@ -74,30 +75,47 @@ export function CalculatorPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [mode, calc, config]);
 
+  /** Clic in cronologia: salta alla modalità della voce e la ricarica. */
+  const recallEntry = (entry: HistoryEntry) => {
+    if (entry.mode === 'calc') {
+      if (mode !== 'standard' && mode !== 'scientific') setMode('standard');
+      calc.recallHistory(entry);
+      return;
+    }
+    if (entry.mode === 'prog') {
+      if (!modes.includes('programmer')) {
+        toast('info', 'La modalità Programmatore è disattivata dal docente.');
+        return;
+      }
+      setMode('programmer');
+      setProgRecall({ nonce: ++recallNonce.current, value: entry.value ?? '0' });
+      return;
+    }
+    if (!entry.graph) return;
+    if (!modes.includes('graphing')) {
+      toast('info', 'La modalità Grafici è disattivata dal docente.');
+      return;
+    }
+    setMode('graphing');
+    setGraphRecall({ nonce: ++recallNonce.current, ...entry.graph });
+  };
+
   const wide = mode !== 'standard';
-  const showHistory = config.history.enabled && (mode === 'standard' || mode === 'scientific');
+  const showHistory = config.history.enabled && mode !== 'statistics';
+  const restricted = countRestrictions(config) > 0 && !user?.isTeacher;
 
   return (
     <>
-      <div className="calc-userbar">
-        <span className="calc-userbar-id">
-          <b>{user?.name}</b>
-          {user?.class && <span className="class-chip">{user.class}</span>}
-          {user?.isTeacher && <span className="class-chip">docente</span>}
-        </span>
-        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {restricted && (
+        <div className="calc-userbar" style={{ justifyContent: 'flex-end' }}>
           <RestrictionBadge config={config} />
-          {user?.isTeacher && (
-            <Link to="/admin" className="btn btn-secondary btn-sm btn-inline">
-              <Settings2 size={14} /> Console docente
-            </Link>
-          )}
-        </span>
-      </div>
+        </div>
+      )}
+
+      <ModeTabs visible={modes} mode={mode} onChange={setMode} />
 
       <div className="calc-layout">
         <motion.div layout className={`calc-card${wide ? ' is-wide' : ''}`}>
-          <ModeTabs visible={modes} mode={mode} onChange={setMode} />
           {(mode === 'standard' || mode === 'scientific') && (
             <Display calc={calc} showAngle={mode === 'scientific' && config.scientific.trig} />
           )}
@@ -111,14 +129,18 @@ export function CalculatorPage() {
             >
               {mode === 'standard' && <StandardPad calc={calc} config={config} />}
               {mode === 'scientific' && <ScientificPad calc={calc} config={config} />}
-              {mode === 'programmer' && <ProgrammerPanel config={config} />}
-              {mode === 'graphing' && <GraphPanel config={config} />}
+              {mode === 'programmer' && (
+                <ProgrammerPanel config={config} history={history} recall={progRecall} />
+              )}
+              {mode === 'graphing' && (
+                <GraphPanel config={config} history={history} recall={graphRecall} />
+              )}
               {mode === 'statistics' && <StatsPanel />}
             </motion.div>
           </AnimatePresence>
         </motion.div>
 
-        {showHistory && <HistoryPanel calc={calc} />}
+        {showHistory && <HistoryPanel history={history} onRecall={recallEntry} />}
       </div>
     </>
   );

@@ -22,6 +22,8 @@ export function AppShell({ children }: Props) {
         user="NC"
         data-hub-url="https://nicolocarello.it"
         data-auth-url={AUTH_ORIGIN}
+        data-theme-key="calc_theme"
+        data-console-url="/admin"
       />
       <BackgroundDecor />
       {children}

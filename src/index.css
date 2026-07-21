@@ -507,7 +507,14 @@ label {
 .restriction-pop ul { margin: 6px 0 0; padding-left: 16px; }
 .restriction-pop li { margin-bottom: 2px; }
 
-/* Tab modalità */
+/* Barra modalità: FISSA, fuori dalla card (che sotto cambia larghezza).
+   Icona + etichetta; su schermi stretti restano solo le icone. */
+.mode-bar-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 .mode-tabs {
   display: flex;
   gap: 4px;
@@ -515,15 +522,14 @@ label {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 4px;
-  margin-bottom: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  box-shadow: 0 2px 8px rgba(35, 32, 28, 0.05);
 }
-
-.mode-tabs::-webkit-scrollbar { display: none; }
 
 .mode-tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   background: none;
   color: var(--muted);
@@ -535,6 +541,11 @@ label {
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.15s;
+}
+
+@media (max-width: 560px) {
+  .mode-tab { padding: 8px 11px; }
+  .mode-tab-label { display: none; }
 }
 
 .mode-tab:hover { color: var(--fg); }
@@ -787,7 +798,13 @@ label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
 }
+
+.history-mode-ico { opacity: 0.55; flex-shrink: 0; }
 
 .history-res {
   font-family: 'JetBrains Mono', monospace;
@@ -795,6 +812,8 @@ label {
   font-weight: 700;
   color: var(--fg);
 }
+
+.history-res.is-range { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 
 .history-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 18px 6px; }
 

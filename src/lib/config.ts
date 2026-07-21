@@ -5,6 +5,7 @@
  * motore di calcolo.
  */
 
+import { Binary, Calculator, ChartColumn, ChartSpline, Sigma, type LucideIcon } from 'lucide-react';
 import {
   DEFAULT_CONFIG,
   countRestrictions,
@@ -18,12 +19,12 @@ export type { CalcConfig };
 
 export type ModeId = 'standard' | 'scientific' | 'programmer' | 'graphing' | 'statistics';
 
-export const MODES: { id: ModeId; label: string; short: string }[] = [
-  { id: 'standard', label: 'Standard', short: 'Std' },
-  { id: 'scientific', label: 'Scientifica', short: 'Sci' },
-  { id: 'programmer', label: 'Programmatore', short: 'Prog' },
-  { id: 'graphing', label: 'Grafici', short: 'Graf' },
-  { id: 'statistics', label: 'Statistica', short: 'Stat' },
+export const MODES: { id: ModeId; label: string; short: string; icon: LucideIcon }[] = [
+  { id: 'standard', label: 'Standard', short: 'Std', icon: Calculator },
+  { id: 'scientific', label: 'Scientifica', short: 'Sci', icon: Sigma },
+  { id: 'programmer', label: 'Programmatore', short: 'Prog', icon: Binary },
+  { id: 'graphing', label: 'Grafici', short: 'Graf', icon: ChartSpline },
+  { id: 'statistics', label: 'Statistica', short: 'Stat', icon: ChartColumn },
 ];
 
 /** Modalità visibili allo studente con la config data. */

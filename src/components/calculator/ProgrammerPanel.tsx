@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Delete } from 'lucide-react';
 import { CalcError } from '../../lib/engine/evaluator';
 import {
@@ -6,6 +6,7 @@ import {
   digitsForBase,
   formatInBase,
   groupedBinary,
+  maskToWord,
   maxForWord,
   parseInBase,
   progApply,
@@ -17,11 +18,18 @@ import {
   type WordSize,
 } from '../../lib/engine/bases';
 import type { CalcConfig } from '../../lib/config';
+import type { HistoryStore } from '../../hooks/useHistoryStore';
 import { Key } from './Key';
 
 interface Props {
   config: CalcConfig;
+  history: HistoryStore;
+  /** Richiamo dalla cronologia: valore decimale da caricare (nonce = trigger). */
+  recall?: { nonce: number; value: string };
 }
+
+/** Prefissi standard per leggere la base nella cronologia (0xFF, 0b1010...). */
+const BASE_PREFIX: Record<Base, string> = { 16: '0x', 10: '', 8: '0o', 2: '0b' };
 
 const NUM_DIGITS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'];
 
@@ -30,15 +38,35 @@ const NUM_DIGITS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'];
  * input nella base attiva (clic sulla riga per cambiarla), word size a scelta,
  * operazioni bitwise e aritmetica intera con wrap a complemento a due.
  */
-export function ProgrammerPanel({ config }: Props) {
+export function ProgrammerPanel({ config, history, recall }: Props) {
   const { baseConv, bitwise } = config.programmer;
 
   const [bits, setBits] = useState<WordSize>(8);
-  const [inputBase, setInputBase] = useState<Base>(baseConv ? 10 : 10);
+  const [inputBase, setInputBase] = useState<Base>(10);
   const [current, setCurrent] = useState('');
   const [acc, setAcc] = useState<bigint>(0n);
   const [pending, setPending] = useState<ProgOp | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  /** Valore formattato con prefisso della base attiva (per la cronologia). */
+  const withPrefix = useCallback(
+    (v: bigint) => BASE_PREFIX[inputBase] + formatInBase(v, inputBase),
+    [inputBase]
+  );
+
+  // Richiamo dalla cronologia: carica il valore come voce corrente.
+  useEffect(() => {
+    if (!recall) return;
+    try {
+      const v = maskToWord(BigInt(recall.value), bits);
+      setCurrent(formatInBase(v, inputBase).toLowerCase());
+      setPending(null);
+      setError(null);
+    } catch {
+      // valore non intero: ignora
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recall?.nonce]);
 
   const shownValue = useMemo(() => {
     if (current !== '') {
@@ -113,6 +141,12 @@ export function ProgrammerPanel({ config }: Props) {
       try {
         if (isUnary(op)) {
           const v = progApply(op, shownValue, 0n, bits);
+          history.add({
+            mode: 'prog',
+            expr: `NOT ${withPrefix(shownValue)}`,
+            result: withPrefix(v),
+            value: v.toString(),
+          });
           setAcc(v);
           setCurrent('');
           setPending(null);
@@ -127,21 +161,28 @@ export function ProgrammerPanel({ config }: Props) {
         setError(e instanceof CalcError ? e.message : 'Errore');
       }
     },
-    [shownValue, current, inputBase, bits, applyPendingWith]
+    [shownValue, current, inputBase, bits, applyPendingWith, history, withPrefix]
   );
 
   const equals = useCallback(() => {
     if (pending === null || current === '') return;
     setError(null);
     try {
-      const r = applyPendingWith(parseInBase(current, inputBase));
+      const b = parseInBase(current, inputBase);
+      const r = applyPendingWith(b);
+      history.add({
+        mode: 'prog',
+        expr: `${withPrefix(acc)} ${PROG_OP_LABEL[pending]} ${withPrefix(b)}`,
+        result: withPrefix(r),
+        value: r.toString(),
+      });
       setAcc(r);
       setCurrent('');
       setPending(null);
     } catch (e) {
       setError(e instanceof CalcError ? e.message : 'Errore');
     }
-  }, [pending, current, inputBase, applyPendingWith]);
+  }, [pending, current, inputBase, applyPendingWith, acc, history, withPrefix]);
 
   const clearAll = useCallback(() => {
     setAcc(0n);

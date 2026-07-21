@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, BookmarkPlus } from 'lucide-react';
 import { sampleFunction } from '../../lib/engine/graph';
 import { CalcError, type AngleMode } from '../../lib/engine/evaluator';
 import { enginePermissions, type CalcConfig } from '../../lib/config';
+import type { HistoryStore } from '../../hooks/useHistoryStore';
+import { useToast } from '../ui/Toast';
 
 interface Props {
   config: CalcConfig;
+  history: HistoryStore;
+  /** Richiamo dalla cronologia: funzione e intervallo da ricaricare. */
+  recall?: { nonce: number; src: string; xMin: number; xMax: number };
 }
 
 const W = 640;
@@ -30,14 +35,25 @@ function fmtTick(v: number): string {
 }
 
 /** Grafico di y = f(x): stesso motore (e stessi permessi) della calcolatrice. */
-export function GraphPanel({ config }: Props) {
+export function GraphPanel({ config, history, recall }: Props) {
   const [src, setSrc] = useState('');
   const [angleMode, setAngleMode] = useState<AngleMode>('rad');
   const [xMin, setXMin] = useState(-10);
   const [xMax, setXMax] = useState(10);
   const [debounced, setDebounced] = useState(src);
+  const { toast } = useToast();
 
   const permissions = useMemo(() => enginePermissions(config), [config]);
+
+  // Richiamo dalla cronologia: ricarica funzione e intervallo.
+  useEffect(() => {
+    if (!recall) return;
+    setSrc(recall.src);
+    setDebounced(recall.src);
+    setXMin(recall.xMin);
+    setXMax(recall.xMax);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recall?.nonce]);
 
   // Espressione iniziale: la prima consentita dalla configurazione.
   useEffect(() => {
@@ -79,6 +95,25 @@ export function GraphPanel({ config }: Props) {
     setXMax(Math.round((mid + half) * 1e6) / 1e6);
   };
 
+  /** Salva la funzione corrente in cronologia (Invio nel campo o segnalibro). */
+  const saveToHistory = () => {
+    const fn = src.trim();
+    if (!fn) return;
+    try {
+      sampleFunction(fn, { angleMode, permissions, xMin, xMax, samples: 32 });
+    } catch (e) {
+      toast('error', e instanceof CalcError ? e.message : 'Funzione non valida');
+      return;
+    }
+    history.add({
+      mode: 'graph',
+      expr: `y = ${fn}`,
+      result: `x ∈ [${String(xMin).replace('.', ',')}; ${String(xMax).replace('.', ',')}]`,
+      graph: { src: fn, xMin, xMax },
+    });
+    toast('success', 'Funzione salvata in cronologia');
+  };
+
   const view = useMemo(() => {
     if (!('data' in sample) || !sample.data) return null;
     const { points, yMin, yMax } = sample.data;
@@ -113,15 +148,34 @@ export function GraphPanel({ config }: Props) {
       <div className="graph-form">
         <div className="field" style={{ flexBasis: 240 }}>
           <label htmlFor="graph-src">y =</label>
-          <input
-            id="graph-src"
-            type="text"
-            value={src}
-            onChange={(e) => setSrc(e.target.value)}
-            spellCheck={false}
-            autoComplete="off"
-            placeholder="es. sin(x) + x/2"
-          />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              id="graph-src"
+              type="text"
+              value={src}
+              onChange={(e) => setSrc(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  saveToHistory();
+                }
+              }}
+              spellCheck={false}
+              autoComplete="off"
+              placeholder="es. sin(x) + x/2"
+            />
+            {history.enabled && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm btn-inline"
+                onClick={saveToHistory}
+                title="Salva in cronologia (o premi Invio)"
+                aria-label="Salva funzione in cronologia"
+              >
+                <BookmarkPlus size={15} />
+              </button>
+            )}
+          </div>
         </div>
         <div className="field field-sm">
           <label htmlFor="graph-xmin">x min</label>
@@ -251,6 +305,7 @@ export function GraphPanel({ config }: Props) {
       <p className="graph-hint">
         Funzioni disponibili secondo la configurazione del docente. Esempi: <code>x^2−3x</code>,{' '}
         <code>sin(x)</code>, <code>ln(x)</code>, <code>abs(x)</code>.
+        {history.enabled && ' Premi Invio (o il segnalibro) per salvare la funzione in cronologia.'}
       </p>
     </div>
   );

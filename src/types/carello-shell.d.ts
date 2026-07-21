@@ -15,6 +15,9 @@ declare global {
         'data-auth-url'?: string;
         'data-dash-url'?: string;
         'data-dash-label'?: string;
+        'data-theme-key'?: string;
+        'data-console-url'?: string;
+        'data-console-label'?: string;
       };
     }
   }

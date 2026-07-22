@@ -6,8 +6,22 @@
 
 import type { AngleMode } from './engine/evaluator';
 
-export type CurveKind = 'explicit' | 'parametric' | 'polar';
+export type CurveKind = 'explicit' | 'parametric' | 'polar' | 'sequence';
 export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
+
+export type PinKind = 'zero' | 'max' | 'min' | 'intersection';
+
+/**
+ * Punto notevole "appuntato": l'etichetta con le coordinate resta visibile
+ * (anche nell'export). Si riaggancia al punto corrente più vicino dello
+ * stesso tipo, così segue la funzione quando cambia poco; se sparisce, decade.
+ */
+export interface ScenePin {
+  kind: PinKind;
+  /** id della funzione a cui appartiene il punto. */
+  fid: string;
+  x: number;
+}
 
 export interface GraphFunction {
   id: string;
@@ -60,6 +74,8 @@ export interface GraphScene {
   piTicks: boolean;
   /** Punti notevoli calcolati su tutte le esplicite visibili. */
   tools: { zeros: boolean; extrema: boolean; intersections: boolean };
+  /** Etichette fissate con un clic sui punti notevoli. */
+  pins: ScenePin[];
 }
 
 /** Tavolozza delle curve (hex concreti: servono identici anche nell'export). */
@@ -116,6 +132,7 @@ export function defaultScene(firstSrc = 'sin(x)'): GraphScene {
     minorGrid: true,
     piTicks: false,
     tools: { zeros: false, extrema: false, intersections: false },
+    pins: [],
   };
 }
 
@@ -144,7 +161,9 @@ function sanitizeFunc(raw: unknown, index: number): GraphFunction | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const kind: CurveKind =
-    r.kind === 'parametric' || r.kind === 'polar' ? (r.kind as CurveKind) : 'explicit';
+    r.kind === 'parametric' || r.kind === 'polar' || r.kind === 'sequence'
+      ? (r.kind as CurveKind)
+      : 'explicit';
   const style: StrokeStyle =
     r.style === 'dashed' || r.style === 'dotted' ? (r.style as StrokeStyle) : 'solid';
   const base = makeFunction({
@@ -216,6 +235,20 @@ export function sanitizeScene(raw: unknown): GraphScene | null {
   if (!(yMax > yMin)) [yMin, yMax] = [DEFAULT_VIEW.yMin, DEFAULT_VIEW.yMax];
 
   const t = (r.tools ?? {}) as Record<string, unknown>;
+
+  const rawPins = Array.isArray(r.pins) ? r.pins : [];
+  const pins: ScenePin[] = [];
+  for (const p of rawPins.slice(0, 40)) {
+    if (!p || typeof p !== 'object') continue;
+    const o = p as Record<string, unknown>;
+    const kind = o.kind;
+    if (kind !== 'zero' && kind !== 'max' && kind !== 'min' && kind !== 'intersection') continue;
+    const fid = str(o.fid, '');
+    const x = num(o.x, NaN);
+    if (!fid || !Number.isFinite(x)) continue;
+    pins.push({ kind, fid, x });
+  }
+
   return {
     funcs,
     sliders,
@@ -229,6 +262,7 @@ export function sanitizeScene(raw: unknown): GraphScene | null {
       extrema: bool(t.extrema, false),
       intersections: bool(t.intersections, false),
     },
+    pins,
   };
 }
 
@@ -236,6 +270,7 @@ export function sanitizeScene(raw: unknown): GraphScene | null {
 export function funcLabel(f: GraphFunction): string {
   if (f.kind === 'parametric') return `x = ${f.src || '…'} · y = ${f.srcY || '…'}`;
   if (f.kind === 'polar') return `r = ${f.src || '…'}`;
+  if (f.kind === 'sequence') return `aₙ = ${f.src || '…'}`;
   return `y = ${f.src || '…'}`;
 }
 

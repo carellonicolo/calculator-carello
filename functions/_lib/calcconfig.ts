@@ -22,7 +22,7 @@ export interface CalcConfig {
   };
   scientific: {
     enabled: boolean;
-    /** sin, cos, tan e inverse + selettore DEG/RAD. */
+    /** sin, cos, tan e inverse + selettore DEG/RAD (+ iperboliche). */
     trig: boolean;
     /** ln, log₁₀, eˣ, 10ˣ. */
     logExp: boolean;
@@ -32,6 +32,8 @@ export interface CalcConfig {
     factorial: boolean;
     /** π ed e. */
     constants: boolean;
+    /** floor, ceil, round, sign. */
+    rounding: boolean;
   };
   programmer: {
     enabled: boolean;
@@ -66,6 +68,7 @@ export const DEFAULT_CONFIG: CalcConfig = {
     powRoot: true,
     factorial: true,
     constants: true,
+    rounding: true,
   },
   programmer: { enabled: true, baseConv: true, bitwise: true },
   graphing: {
@@ -110,6 +113,7 @@ export function sanitizeConfig(raw: unknown): CalcConfig {
       powRoot: asBool(sci.powRoot, d.scientific.powRoot),
       factorial: asBool(sci.factorial, d.scientific.factorial),
       constants: asBool(sci.constants, d.scientific.constants),
+      rounding: asBool(sci.rounding, d.scientific.rounding),
     },
     programmer: {
       enabled: asBool(prg.enabled, d.programmer.enabled),
@@ -145,7 +149,7 @@ export function countRestrictions(c: CalcConfig): number {
     { groups: [c.standard.percent, c.standard.sqrt, c.standard.memory] },
     {
       enabled: c.scientific.enabled,
-      groups: [c.scientific.trig, c.scientific.logExp, c.scientific.powRoot, c.scientific.factorial, c.scientific.constants],
+      groups: [c.scientific.trig, c.scientific.logExp, c.scientific.powRoot, c.scientific.factorial, c.scientific.constants, c.scientific.rounding],
     },
     { enabled: c.programmer.enabled, groups: [c.programmer.baseConv, c.programmer.bitwise] },
     {

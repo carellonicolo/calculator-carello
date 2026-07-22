@@ -42,16 +42,20 @@ export function visibleModes(c: CalcConfig): ModeId[] {
  * tastiera, tastiera fisica E grafici).
  */
 export function enginePermissions(c: CalcConfig): EnginePermissions {
-  const functions = new Set<string>(['abs']);
+  // abs e le funzioni "strutturali" (a tratti, min/max) sono sempre ammesse.
+  const functions = new Set<string>(['abs', 'se', 'min', 'max']);
   if (c.standard.sqrt) functions.add('sqrt');
   if (c.scientific.enabled) {
     if (c.scientific.trig) {
-      for (const f of ['sin', 'cos', 'tan', 'asin', 'acos', 'atan']) functions.add(f);
+      for (const f of ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh']) functions.add(f);
     }
     if (c.scientific.logExp) {
       for (const f of ['ln', 'log', 'exp', 'pow10']) functions.add(f);
     }
     if (c.scientific.powRoot) functions.add('cbrt');
+    if (c.scientific.rounding) {
+      for (const f of ['floor', 'ceil', 'round', 'sign']) functions.add(f);
+    }
   }
   return {
     functions,
@@ -99,11 +103,12 @@ export const AREAS: AreaMeta[] = [
     hint: 'Funzioni matematiche avanzate',
     hasMaster: true,
     groups: [
-      { area: 'scientific', key: 'trig', label: 'Trigonometria', hint: 'sin · cos · tan · inverse · DEG/RAD' },
+      { area: 'scientific', key: 'trig', label: 'Trigonometria', hint: 'sin · cos · tan · inverse · iperboliche · DEG/RAD' },
       { area: 'scientific', key: 'logExp', label: 'Logaritmi ed esponenziali', hint: 'ln · log₁₀ · eˣ · 10ˣ' },
       { area: 'scientific', key: 'powRoot', label: 'Potenze e radici', hint: 'x² · x³ · xʸ · ∛ · 1/x' },
       { area: 'scientific', key: 'factorial', label: 'Fattoriale', hint: 'n!' },
       { area: 'scientific', key: 'constants', label: 'Costanti', hint: 'π · e' },
+      { area: 'scientific', key: 'rounding', label: 'Arrotondamenti e segno', hint: 'floor · ceil · round · sign' },
     ],
   },
   {

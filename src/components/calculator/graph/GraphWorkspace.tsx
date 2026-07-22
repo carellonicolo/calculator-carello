@@ -10,6 +10,7 @@ import {
   ImageDown,
   Maximize,
   Minimize,
+  Presentation,
   Table2,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -73,6 +74,7 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
   const { scene, setScene } = store;
   const [tab, setTab] = useState<SideTab>('fn');
   const [fs, setFs] = useState(false);
+  const [board, setBoard] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
   // Richiamo dalla cronologia.
@@ -197,6 +199,15 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
         </button>
         <button
           type="button"
+          className={clsx('btn btn-ghost btn-sm btn-inline', board && 'is-active-tool')}
+          onClick={() => setBoard((v) => !v)}
+          title="Modalità lavagna: tratti e caratteri ingranditi per la proiezione"
+          aria-pressed={board}
+        >
+          <Presentation size={14} /> <span className="graph-btn-label">Lavagna</span>
+        </button>
+        <button
+          type="button"
           className="btn btn-ghost btn-sm btn-inline"
           onClick={() => setFs((v) => !v)}
           title={fs ? 'Esci dallo schermo intero' : 'Schermo intero'}
@@ -243,7 +254,13 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
           </div>
           <div className="graph-side-scroll">
             {tab === 'fn' && (
-              <FunctionList store={store} renders={renders} features={features} slidersEnabled={config.graphing.sliders} />
+              <FunctionList
+                store={store}
+                renders={renders}
+                features={features}
+                slidersEnabled={config.graphing.sliders}
+                permissions={permissions}
+              />
             )}
             {tab === 'table' && showTable && <ValueTable store={store} renders={renders} />}
             {tab === 'history' && showHistory && (
@@ -252,11 +269,12 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
           </div>
           <div className="graph-side-foot">
             <ChartSpline size={12} aria-hidden="true" />
-            Trascina il piano per spostarti, rotella o pizzico per lo zoom.
+            Trascina = sposta · rotella/pizzico = zoom · Shift+trascina = zoom su area · clic su un punto
+            notevole = fissa l'etichetta.
           </div>
         </aside>
 
-        <PlotCanvas store={store} renders={renders} notables={notables} />
+        <PlotCanvas store={store} renders={renders} notables={notables} board={board} />
       </div>
 
       <ExportDialog

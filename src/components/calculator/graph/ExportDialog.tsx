@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { ImageDown, X } from 'lucide-react';
+import { Copy, ImageDown, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { EnginePermissions } from '../../../lib/engine/evaluator';
 import type { GraphScene } from '../../../lib/graphScene';
@@ -81,6 +81,30 @@ export function ExportDialog({
   }, [open, scene, permissions, vars, features, plotW, plotH, format, effBackground, withHeader, withLegend, userName, classe]);
 
   if (!open) return null;
+
+  /** Copia negli appunti (sempre PNG): incolli dritto in Word/Docs. */
+  const doCopy = async () => {
+    setBusy(true);
+    try {
+      const canvas = renderSceneToCanvas(scene, permissions, vars, features, plotW, plotH, {
+        format: 'png',
+        scale,
+        background: effBackground,
+        header: withHeader ? { name: userName, classe } : null,
+        legend: withLegend,
+      });
+      const blob = new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('blob'))), 'image/png')
+      );
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('success', 'Immagine copiata negli appunti');
+      onClose();
+    } catch {
+      toast('error', 'Copia non riuscita: il browser non lo permette, usa Scarica');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const doExport = async () => {
     setBusy(true);
@@ -191,7 +215,17 @@ export function ExportDialog({
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             Annulla
           </button>
-          <button type="button" className="btn" disabled={busy} onClick={doExport}>
+          <span style={{ flex: 1 }} />
+          <button
+            type="button"
+            className="btn btn-secondary btn-inline"
+            disabled={busy}
+            onClick={doCopy}
+            title="Copia il PNG negli appunti"
+          >
+            <Copy size={15} /> Copia
+          </button>
+          <button type="button" className="btn btn-inline" disabled={busy} onClick={doExport}>
             <ImageDown size={15} /> Scarica {format.toUpperCase()}
           </button>
         </div>

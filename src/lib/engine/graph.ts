@@ -83,7 +83,86 @@ export function sampleFunction(src: string, opts: SampleOpts): GraphSample {
   if (finite.length === 0) throw new CalcError('Nessun punto calcolabile in questo intervallo');
 
   const { yMin, yMax } = robustRange(finite);
-  return { points, yMin, yMax };
+  return { points: breakJumps(points, f, yMin, yMax), yMin, yMax };
+}
+
+/**
+ * Spezza i salti (floor, sign, se(...) e asintoti tipo tan): un gradino non va
+ * collegato con un segmento verticale. Candidati = |Δy| ben sopra la mediana;
+ * conferma col punto medio: se f(m) non sta vicino alla media, è un salto.
+ */
+function breakJumps(
+  points: ({ x: number; y: number } | null)[],
+  f: (x: number) => number,
+  yMin: number,
+  yMax: number
+): ({ x: number; y: number } | null)[] {
+  const dys: number[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i - 1];
+    const q = points[i];
+    if (p && q) dys.push(Math.abs(q.y - p.y));
+  }
+  if (dys.length < 8) return points;
+  const med = [...dys].sort((a, b) => a - b)[Math.floor(dys.length / 2)];
+  const thr = Math.max(3 * med, (yMax - yMin) * 0.02, 1e-12);
+
+  const out: ({ x: number; y: number } | null)[] = [];
+  for (let i = 0; i < points.length; i++) {
+    out.push(points[i]);
+    const p = points[i];
+    const q = points[i + 1];
+    if (!p || !q) continue;
+    const dy = Math.abs(q.y - p.y);
+    if (dy <= thr) continue;
+    let ym = NaN;
+    try {
+      const v = f((p.x + q.x) / 2);
+      ym = Number.isFinite(v) ? v : NaN;
+    } catch {
+      // punto medio fuori dominio → salto certo
+    }
+    if (Number.isNaN(ym) || Math.abs(ym - (p.y + q.y) / 2) > dy * 0.25) out.push(null);
+  }
+  return out;
+}
+
+/**
+ * Successione aₙ: campiona SOLO gli interi visibili (punti discreti).
+ * Gli n fuori dominio (es. 1/n in 0) si saltano senza errore.
+ */
+export function sampleSequence(
+  src: string,
+  opts: {
+    angleMode: AngleMode;
+    permissions: EnginePermissions;
+    xMin: number;
+    xMax: number;
+    vars?: Record<string, number>;
+  }
+): { points: { x: number; y: number }[] } {
+  const nMin = Math.ceil(opts.xMin);
+  const nMax = Math.floor(opts.xMax);
+  const extra = opts.vars ?? {};
+  const fn = compile(src, {
+    angleMode: opts.angleMode,
+    permissions: opts.permissions,
+    variables: ['n', ...Object.keys(extra)],
+  });
+  const points: { x: number; y: number }[] = [];
+  if (nMax < nMin) return { points };
+  const stride = Math.max(1, Math.ceil((nMax - nMin + 1) / 1500));
+  for (let n = nMin; n <= nMax; n += stride) {
+    try {
+      const y = fn({ ...extra, n });
+      if (Number.isFinite(y)) points.push({ x: n, y });
+    } catch (e) {
+      if (e instanceof CalcPermissionError) throw e;
+      if (!(e instanceof CalcError)) throw e;
+      // n fuori dominio: salta
+    }
+  }
+  return { points };
 }
 
 /** Curva parametrica x(t), y(t) campionata su [tMin, tMax]. */
@@ -203,7 +282,7 @@ export function robustRange(values: number[]): { yMin: number; yMax: number } {
 
 // ------------------------------------------------- Rilevamento dei parametri
 
-const RESERVED = new Set<string>([...ALL_FUNCTIONS, 'pi', 'e', 'x', 'y', 't', 'theta', 'ans', 'mem']);
+const RESERVED = new Set<string>([...ALL_FUNCTIONS, 'pi', 'e', 'x', 'y', 't', 'n', 'theta', 'ans', 'mem']);
 
 /**
  * Scansione lessicale tollerante: i nomi di UNA lettera che non sono

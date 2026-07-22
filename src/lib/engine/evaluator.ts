@@ -24,8 +24,22 @@ export interface EnginePermissions {
 
 export const ALL_FUNCTIONS = [
   'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+  'sinh', 'cosh', 'tanh',
   'ln', 'log', 'sqrt', 'cbrt', 'exp', 'pow10', 'abs',
+  'floor', 'ceil', 'round', 'sign',
+  'se', 'min', 'max',
 ] as const;
+
+/** Arità ammessa per funzione (min/max argomenti, separati da ";"). */
+const FN_ARITY: Record<string, { min: number; max: number }> = {
+  se: { min: 3, max: 3 },
+  min: { min: 2, max: 8 },
+  max: { min: 2, max: 8 },
+};
+
+function arityOf(name: string): { min: number; max: number } {
+  return FN_ARITY[name] ?? { min: 1, max: 1 };
+}
 
 export function fullPermissions(): EnginePermissions {
   return {
@@ -68,6 +82,29 @@ function tokenize(src: string): Tok[] {
       i++;
       continue;
     }
+    // Confronti (per le funzioni a tratti): < > <= >= e i simboli ≤ ≥.
+    if (c === '<' || c === '>') {
+      const op = src[i + 1] === '=' ? c + '=' : c;
+      toks.push({ kind: 'op', op });
+      i += op.length;
+      continue;
+    }
+    if (c === '≤') {
+      toks.push({ kind: 'op', op: '<=' });
+      i++;
+      continue;
+    }
+    if (c === '≥') {
+      toks.push({ kind: 'op', op: '>=' });
+      i++;
+      continue;
+    }
+    // Separatore degli argomenti: se(x<0; -x; x^2).
+    if (c === ';') {
+      toks.push({ kind: 'op', op: ';' });
+      i++;
+      continue;
+    }
     if (OPS.has(c)) {
       toks.push({ kind: 'op', op: c });
       i++;
@@ -84,18 +121,34 @@ function tokenize(src: string): Tok[] {
       i++;
       continue;
     }
-    if ((c >= '0' && c <= '9') || c === '.') {
+    // Numeri: il separatore decimale è il punto O la virgola (0,5 ≡ 0.5).
+    // La virgola conta come decimale solo se seguita da una cifra.
+    const isDigit = (k: number) => src[k] >= '0' && src[k] <= '9';
+    const startsNumber = isDigit(i) || c === '.' || (c === ',' && i + 1 < src.length && isDigit(i + 1));
+    if (startsNumber) {
       let j = i;
       let dots = 0;
-      while (j < src.length && ((src[j] >= '0' && src[j] <= '9') || src[j] === '.')) {
-        if (src[j] === '.') dots++;
-        j++;
+      while (j < src.length) {
+        const ch = src[j];
+        if (isDigit(j)) {
+          j++;
+          continue;
+        }
+        if (ch === '.' || (ch === ',' && j + 1 < src.length && isDigit(j + 1))) {
+          dots++;
+          j++;
+          continue;
+        }
+        break;
       }
-      const text = src.slice(i, j);
+      const text = src.slice(i, j).replace(/,/g, '.');
       if (dots > 1 || text === '.') throw new CalcError('Numero non valido');
       toks.push({ kind: 'num', value: parseFloat(text) });
       i = j;
       continue;
+    }
+    if (c === ',') {
+      throw new CalcError('Per separare gli argomenti usa ";" (la virgola è il separatore decimale)');
     }
     if (/[a-zA-Z]/.test(c)) {
       let j = i;
@@ -111,14 +164,17 @@ function tokenize(src: string): Tok[] {
 
 // -------------------------------------------------------------------- AST
 
+type CmpOp = '<' | '<=' | '>' | '>=';
+
 type Ast =
   | { t: 'num'; v: number }
   | { t: 'const'; name: 'pi' | 'e' }
   | { t: 'var'; name: string }
   | { t: 'neg'; a: Ast }
   | { t: 'bin'; op: '+' | '-' | '*' | '/' | '^'; a: Ast; b: Ast }
+  | { t: 'cmp'; op: CmpOp; a: Ast; b: Ast }
   | { t: 'post'; op: '!' | '%'; a: Ast }
-  | { t: 'fn'; name: string; a: Ast };
+  | { t: 'fn'; name: string; args: Ast[] };
 
 const FN_SET = new Set<string>(ALL_FUNCTIONS);
 
@@ -167,9 +223,24 @@ class Parser {
       if (t.name === 'pi' || t.name === 'e') return { t: 'const', name: t.name };
       if (FN_SET.has(t.name)) {
         this.expect('(');
-        const a = this.expr(0);
+        const args: Ast[] = [this.expr(0)];
+        while (this.peek()?.kind === 'op' && (this.peek() as { op: string }).op === ';') {
+          this.pos++;
+          args.push(this.expr(0));
+        }
         this.expect(')');
-        return { t: 'fn', name: t.name, a };
+        const { min, max } = arityOf(t.name);
+        if (args.length < min || args.length > max) {
+          if (t.name === 'se') {
+            throw new CalcError('se richiede 3 argomenti: se(condizione; se_vera; se_falsa)');
+          }
+          throw new CalcError(
+            min === max
+              ? `${t.name} richiede ${min} argoment${min === 1 ? 'o' : 'i'}`
+              : `${t.name} richiede da ${min} a ${max} argomenti (separati da ";")`
+          );
+        }
+        return { t: 'fn', name: t.name, args };
       }
       if (this.variables.includes(t.name)) return { t: 'var', name: t.name };
       throw new CalcError(`Funzione o simbolo sconosciuto: "${t.name}"`);
@@ -217,7 +288,14 @@ class Parser {
           left = { t: 'post', op: t.op, a: left };
           continue;
         }
-        if (t.op === ')') break;
+        // Confronti: legano meno di + e − (x+1 < 2x è (x+1) < (2x)).
+        if (t.op === '<' || t.op === '<=' || t.op === '>' || t.op === '>=') {
+          if (5 <= rbp) break;
+          this.pos++;
+          left = { t: 'cmp', op: t.op as CmpOp, a: left, b: this.expr(6) };
+          continue;
+        }
+        if (t.op === ')' || t.op === ';') break;
         // "2(3+4)": parentesi aperta dopo un operando → moltiplicazione implicita.
         if (t.op === '(') {
           if (20 <= rbp) break;
@@ -286,6 +364,20 @@ function applyFn(name: string, x: number, mode: AngleMode): number {
       return Math.pow(10, x);
     case 'abs':
       return Math.abs(x);
+    case 'sinh':
+      return Math.sinh(x);
+    case 'cosh':
+      return Math.cosh(x);
+    case 'tanh':
+      return Math.tanh(x);
+    case 'floor':
+      return Math.floor(x);
+    case 'ceil':
+      return Math.ceil(x);
+    case 'round':
+      return Math.round(x);
+    case 'sign':
+      return Math.sign(x);
     default:
       throw new CalcError(`Funzione sconosciuta: "${name}"`);
   }
@@ -344,11 +436,36 @@ function evalAst(ast: Ast, opts: EvalOptions, vars: Record<string, number>): num
       }
       return evalAst(ast.a, opts, vars) / 100;
     }
+    case 'cmp': {
+      const a = evalAst(ast.a, opts, vars);
+      const b = evalAst(ast.b, opts, vars);
+      switch (ast.op) {
+        case '<':
+          return a < b ? 1 : 0;
+        case '<=':
+          return a <= b ? 1 : 0;
+        case '>':
+          return a > b ? 1 : 0;
+        case '>=':
+          return a >= b ? 1 : 0;
+      }
+      throw new CalcError('Confronto non valido');
+    }
     case 'fn': {
       if (!opts.permissions.functions.has(ast.name)) {
         throw new CalcPermissionError('Funzione disattivata dal docente');
       }
-      return applyFn(ast.name, evalAst(ast.a, opts, vars), opts.angleMode);
+      // se(cond; a; b) è pigra: valuta SOLO il ramo scelto, così
+      // se(x>0; ln(x); 0) non esplode dove ln non è definito.
+      if (ast.name === 'se') {
+        const cond = evalAst(ast.args[0], opts, vars);
+        return evalAst(cond !== 0 ? ast.args[1] : ast.args[2], opts, vars);
+      }
+      if (ast.name === 'min' || ast.name === 'max') {
+        const vals = ast.args.map((a) => evalAst(a, opts, vars));
+        return ast.name === 'min' ? Math.min(...vals) : Math.max(...vals);
+      }
+      return applyFn(ast.name, evalAst(ast.args[0], opts, vars), opts.angleMode);
     }
   }
 }

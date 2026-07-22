@@ -10,6 +10,7 @@ import {
   buildNotables,
   buildRenders,
   computeGrid,
+  resolvePins,
   type GraphFeatures,
   type Pt,
 } from './graphDerived';
@@ -71,6 +72,24 @@ const THEMES: Record<ExportBackground, Theme> = {
 
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
 const SANS = 'Inter, system-ui, sans-serif';
+
+/** Rettangolo con angoli tondi (senza dipendere da ctx.roundRect). */
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
 /** Classe dello studente dal cookie companion nc_profile (campo c, display-only). */
 export function readProfileClasse(): string | null {
@@ -259,6 +278,21 @@ export function renderSceneToCanvas(
   for (const r of renders) {
     if (!r.f.visible || r.pts.length === 0) continue;
 
+    // Successioni: punti discreti.
+    if (r.f.kind === 'sequence') {
+      ctx.fillStyle = r.f.color;
+      for (const p of r.pts) {
+        if (!p) continue;
+        const sx = px(p.x);
+        const sy = py(p.y);
+        if (sx < -20 || sx > W + 20 || sy < headerH - 20 || sy > headerH + plotH + 20) continue;
+        ctx.beginPath();
+        ctx.arc(sx, sy, (r.f.width + 1.2) * k, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      continue;
+    }
+
     if (r.integral) {
       const pts = r.integral.area.filter((p): p is { x: number; y: number } => p !== null);
       if (pts.length > 1) {
@@ -317,6 +351,39 @@ export function renderSceneToCanvas(
     ctx.arc(px(n.x), py(n.y), 4.5 * k, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+  }
+
+  // Pin: le etichette fissate finiscono anche nell'immagine.
+  const pins = resolvePins(scene, notables);
+  ctx.font = `${11.5 * k}px ${MONO}`;
+  ctx.textBaseline = 'middle';
+  for (const p of pins) {
+    const cx = px(p.x);
+    const cy = py(p.y);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 1.6 * k;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8 * k, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const tw = ctx.measureText(p.text).width;
+    const pad = 5 * k;
+    const bh = 18 * k;
+    let bx = cx + 11 * k;
+    let by = cy - 26 * k;
+    if (bx + tw + pad * 2 > W - 4 * k) bx = cx - tw - pad * 2 - 11 * k;
+    if (by < headerH + 4 * k) by = cy + 12 * k;
+    ctx.fillStyle = theme.bg ?? '#ffffff';
+    ctx.globalAlpha = 0.92;
+    roundRect(ctx, bx, by, tw + pad * 2, bh, 5 * k);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = k;
+    roundRect(ctx, bx, by, tw + pad * 2, bh, 5 * k);
+    ctx.stroke();
+    ctx.fillStyle = theme.text;
+    ctx.fillText(p.text, bx + pad, by + bh / 2);
   }
 
   ctx.restore();

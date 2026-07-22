@@ -16,6 +16,7 @@ import {
   sampleFunction,
   sampleParametric,
   samplePolar,
+  sampleSequence,
 } from './engine/graph';
 import {
   derivativeAt,
@@ -26,7 +27,7 @@ import {
   tangentAt,
   type Tangent,
 } from './engine/analyze';
-import type { GraphFunction, GraphScene, ViewWindow } from './graphScene';
+import type { GraphFunction, GraphScene, ScenePin, ViewWindow } from './graphScene';
 
 export type Pt = { x: number; y: number } | null;
 
@@ -56,6 +57,8 @@ export interface NotablePt {
   color: string;
   /** Etichetta breve ("zero", "max", "∩"). */
   label: string;
+  /** Funzione di appartenenza (per i pin). */
+  fid: string;
 }
 
 const SAMPLES = 900;
@@ -137,6 +140,14 @@ function renderFunc(
           out.error = errMsg(e);
         }
       }
+    } else if (f.kind === 'sequence') {
+      out.pts = sampleSequence(f.src, {
+        angleMode,
+        permissions,
+        xMin: view.xMin,
+        xMax: view.xMax,
+        vars,
+      }).points;
     } else if (f.kind === 'parametric') {
       out.pts = sampleParametric(f.src, f.srcY, {
         angleMode,
@@ -190,12 +201,12 @@ export function buildNotables(
     const fn = r.fn as (x: number) => number;
     if (zeros) {
       for (const x of findZeros(fn, xMin, xMax)) {
-        out.push({ x, y: 0, kind: 'zero', color: r.f.color, label: 'zero' });
+        out.push({ x, y: 0, kind: 'zero', color: r.f.color, label: 'zero', fid: r.f.id });
       }
     }
     if (extrema) {
       for (const p of findExtrema(fn, xMin, xMax)) {
-        out.push({ ...p, color: r.f.color, label: p.kind === 'max' ? 'max' : 'min' });
+        out.push({ ...p, color: r.f.color, label: p.kind === 'max' ? 'max' : 'min', fid: r.f.id });
       }
     }
   }
@@ -205,12 +216,68 @@ export function buildNotables(
         const fi = usable[i].fn as (x: number) => number;
         const fj = usable[j].fn as (x: number) => number;
         for (const p of findIntersections(fi, fj, xMin, xMax)) {
-          out.push({ ...p, color: usable[i].f.color, label: '∩' });
+          out.push({ ...p, color: usable[i].f.color, label: '∩', fid: usable[i].f.id });
         }
       }
     }
   }
   return out.slice(0, 160);
+}
+
+// ------------------------------------------------------------------- Pin
+
+export interface ResolvedPin {
+  x: number;
+  y: number;
+  color: string;
+  kind: NotablePt['kind'];
+  text: string;
+}
+
+/** Tolleranza di riaggancio dei pin: 3% della finestra visibile. */
+function pinTol(view: ViewWindow): number {
+  return (view.xMax - view.xMin) * 0.03;
+}
+
+/**
+ * Riaggancia i pin salvati ai punti notevoli correnti (stesso tipo e stessa
+ * funzione, x più vicina entro tolleranza). Un pin senza punto → non si vede.
+ */
+export function resolvePins(scene: GraphScene, notables: NotablePt[]): ResolvedPin[] {
+  const tol = pinTol(scene.view);
+  const out: ResolvedPin[] = [];
+  for (const pin of scene.pins) {
+    let best: NotablePt | null = null;
+    let bestDx = tol;
+    for (const n of notables) {
+      if (n.kind !== pin.kind || n.fid !== pin.fid) continue;
+      const dx = Math.abs(n.x - pin.x);
+      if (dx <= bestDx) {
+        bestDx = dx;
+        best = n;
+      }
+    }
+    if (best) {
+      out.push({
+        x: best.x,
+        y: best.y,
+        color: best.color,
+        kind: best.kind,
+        text: `${best.label} (${fmtIt(best.x, 4)}; ${fmtIt(best.y, 4)})`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Aggiunge o toglie il pin del punto notevole indicato. */
+export function togglePin(scene: GraphScene, n: NotablePt): ScenePin[] {
+  const tol = pinTol(scene.view);
+  const existing = scene.pins.findIndex(
+    (p) => p.kind === n.kind && p.fid === n.fid && Math.abs(p.x - n.x) <= tol
+  );
+  if (existing >= 0) return scene.pins.filter((_, i) => i !== existing);
+  return [...scene.pins, { kind: n.kind, fid: n.fid, x: n.x }].slice(-40);
 }
 
 // ------------------------------------------------------------- Griglia/tick

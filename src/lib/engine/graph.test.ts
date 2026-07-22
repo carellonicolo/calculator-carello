@@ -4,6 +4,7 @@ import {
   sampleFunction,
   sampleParametric,
   samplePolar,
+  sampleSequence,
   compileExplicit,
   detectParams,
 } from './graph';
@@ -66,6 +67,48 @@ describe('sampleParametric e samplePolar', () => {
     // step = 360/64 → points[16] è θ = 90° → punto (0, 1)
     expect(points[16]?.x).toBeCloseTo(0, 9);
     expect(points[16]?.y).toBeCloseTo(1, 9);
+  });
+});
+
+describe('sampleSequence', () => {
+  it('campiona solo gli interi della finestra', () => {
+    const { points } = sampleSequence('n^2', { ...base, xMin: -2.7, xMax: 3.4 });
+    expect(points.map((p) => p.x)).toEqual([-2, -1, 0, 1, 2, 3]);
+    expect(points[5].y).toBe(9);
+  });
+
+  it('salta gli n fuori dominio senza errore', () => {
+    const { points } = sampleSequence('1/n', { ...base, xMin: -2, xMax: 2 });
+    expect(points.map((p) => p.x)).toEqual([-2, -1, 1, 2]);
+  });
+
+  it('usa i parametri degli slider', () => {
+    const { points } = sampleSequence('k*n', { ...base, xMin: 1, xMax: 3, vars: { k: 2 } });
+    expect(points.map((p) => p.y)).toEqual([2, 4, 6]);
+  });
+
+  it('finestra senza interi → nessun punto', () => {
+    const { points } = sampleSequence('n', { ...base, xMin: 0.2, xMax: 0.8 });
+    expect(points).toEqual([]);
+  });
+});
+
+describe('spezzamento dei salti', () => {
+  it('floor(x): i gradini NON sono collegati in verticale', () => {
+    const s = sampleFunction('floor(x)', { ...base, xMin: 0, xMax: 5, samples: 200 });
+    expect(s.points.some((p) => p === null)).toBe(true);
+  });
+
+  it('se(...) spezza al confine del tratto', () => {
+    const s = sampleFunction('se(x<0; -5; 5)', { ...base, xMin: -3, xMax: 3, samples: 200 });
+    expect(s.points.some((p) => p === null)).toBe(true);
+  });
+
+  it('le funzioni continue restano intere', () => {
+    for (const src of ['sin(x)', 'x^3', 'exp(x)']) {
+      const s = sampleFunction(src, { ...base, xMin: -6, xMax: 6, samples: 200 });
+      expect(s.points.every((p) => p !== null)).toBe(true);
+    }
   });
 });
 

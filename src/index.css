@@ -1716,3 +1716,80 @@ label {
   .graph-stage.is-fs .plot-wrap { height: clamp(320px, 56vh, 620px); }
   .graph-stage.is-fs .graph-side { height: auto; max-height: 38vh; }
 }
+
+/* ---------------------------------- Grafici v2.1: tastiera, pin, box zoom */
+.fn-input-wrap { position: relative; flex: 1; min-width: 88px; display: flex; }
+.fn-input-wrap .fn-input { width: 100%; min-width: 0; }
+
+.fn-sug {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.fn-sug-item {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 7px 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.fn-sug-item:hover { background: var(--key-fn); color: var(--key-fn-text); }
+
+.mkb {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 8px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mkb-row { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.mkb-key {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--key-num);
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.mkb-key:hover { border-color: var(--primary); }
+.mkb-key:active { transform: translateY(1px); }
+.mkb-fn { background: var(--key-fn); color: var(--key-fn-text); font-size: 11.5px; }
+
+.plot-boxzoom {
+  fill: var(--primary);
+  fill-opacity: 0.08;
+  stroke: var(--primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+
+.plot-chip.is-pin { pointer-events: none; font-weight: 600; }
+.plot-chip.is-board { font-size: 14px; padding: 5px 10px; }
+
+.is-active-tool { color: var(--primary) !important; border-color: var(--primary) !important; }

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutGrid, RotateCcw, Scan, ZoomIn, ZoomOut } from 'lucide-react';
+import { BoxSelect, LayoutGrid, RotateCcw, Scan, ZoomIn, ZoomOut } from 'lucide-react';
 import type { GraphSceneStore } from '../../../hooks/useGraphScene';
 import type { ViewWindow } from '../../../lib/graphScene';
 import {
   computeGrid,
   fmtIt,
+  resolvePins,
   tangentLabel,
+  togglePin,
   type CurveRender,
   type NotablePt,
   type Pt,
@@ -15,6 +17,8 @@ interface Props {
   store: GraphSceneStore;
   renders: CurveRender[];
   notables: NotablePt[];
+  /** Modalità lavagna: tratti, punti e caratteri ingranditi per la LIM. */
+  board: boolean;
 }
 
 interface Size {
@@ -23,8 +27,9 @@ interface Size {
 }
 
 type Drag =
-  | { type: 'pan'; view0: ViewWindow; sx: number; sy: number }
+  | { type: 'pan'; view0: ViewWindow; sx: number; sy: number; moved: boolean }
   | { type: 'pinch'; view0: ViewWindow; d0: number; mx: number; my: number }
+  | { type: 'box'; sx: number; sy: number }
   | { type: 'handle'; handle: string };
 
 interface Trace {
@@ -45,16 +50,23 @@ function safeEval(fn: (x: number) => number, x: number): number {
 
 const MONO = 'JetBrains Mono, monospace';
 
-/** Piano cartesiano interattivo: pan, zoom (rotella/pinch), trace, maniglie. */
-export function PlotCanvas({ store, renders, notables }: Props) {
+/** Piano cartesiano interattivo: pan, zoom (rotella/pinch/box), trace, pin. */
+export function PlotCanvas({ store, renders, notables, board }: Props) {
   const { scene, setScene, setView, patchFunc } = store;
   const { view } = scene;
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState<Size>({ w: 800, h: 520 });
   const [trace, setTrace] = useState<Trace | null>(null);
+  const [boxArm, setBoxArm] = useState(false);
+  const [boxRect, setBoxRect] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const drag = useRef<Drag | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
+
+  // Fattori "lavagna": tutto più grande e leggibile da lontano.
+  const BW = board ? 1.7 : 1; // spessore curve
+  const BT = board ? 15 : 11; // font dei tick
+  const BR = board ? 7 : 4.5; // raggio punti notevoli
 
   // Dimensioni reali del contenitore → SVG a coordinate pixel.
   useEffect(() => {
@@ -127,6 +139,18 @@ export function PlotCanvas({ store, renders, notables }: Props) {
     };
 
     return renders.map((r) => {
+      // Successioni: punti discreti, non tratti.
+      if (r.f.kind === 'sequence') {
+        const dots: { x: number; y: number }[] = [];
+        for (const p of r.pts) {
+          if (!p) continue;
+          const sx = px(p.x);
+          const sy = py(p.y);
+          if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue;
+          dots.push({ x: sx, y: sy });
+        }
+        return { r, main: [] as string[], deriv: [] as string[], areaPath: '', dots };
+      }
       const main = toSegments(r.pts, r.f.kind === 'explicit');
       const deriv = r.dpts ? toSegments(r.dpts, true) : [];
       let areaPath = '';
@@ -140,9 +164,12 @@ export function PlotCanvas({ store, renders, notables }: Props) {
             `L${px(pts[pts.length - 1].x).toFixed(1)} ${py(0).toFixed(1)}Z`;
         }
       }
-      return { r, main, deriv, areaPath };
+      return { r, main, deriv, areaPath, dots: [] as { x: number; y: number }[] };
     });
-  }, [renders, view, px, py]);
+  }, [renders, view, px, py, w, h]);
+
+  // Pin: etichette fissate, riagganciate ai punti notevoli correnti.
+  const pins = useMemo(() => resolvePins(scene, notables), [scene, notables]);
 
   // ------------------------------------------------------------ Interazione
   const applyZoom = useCallback(
@@ -192,6 +219,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
       return;
     }
     if (pointers.current.size === 2) {
+      setBoxRect(null);
       const [a, b] = [...pointers.current.values()];
       drag.current = {
         type: 'pinch',
@@ -200,8 +228,12 @@ export function PlotCanvas({ store, renders, notables }: Props) {
         mx: (a.x + b.x) / 2,
         my: (a.y + b.y) / 2,
       };
+    } else if (e.shiftKey || boxArm) {
+      // Zoom a rettangolo: trascina la selezione, al rilascio diventa la vista.
+      drag.current = { type: 'box', sx: p.x, sy: p.y };
+      setBoxRect({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
     } else {
-      drag.current = { type: 'pan', view0: { ...view }, sx: p.x, sy: p.y };
+      drag.current = { type: 'pan', view0: { ...view }, sx: p.x, sy: p.y, moved: false };
     }
     setTrace(null);
   };
@@ -240,7 +272,12 @@ export function PlotCanvas({ store, renders, notables }: Props) {
       }
       return;
     }
+    if (d?.type === 'box') {
+      setBoxRect((r) => (r ? { ...r, x1: p.x, y1: p.y } : null));
+      return;
+    }
     if (d?.type === 'pan') {
+      if (Math.hypot(p.x - d.sx, p.y - d.sy) > 5) d.moved = true;
       const dx = ((p.x - d.sx) / w) * (d.view0.xMax - d.view0.xMin);
       const dy = ((p.y - d.sy) / h) * (d.view0.yMax - d.view0.yMin);
       setView({
@@ -306,12 +343,45 @@ export function PlotCanvas({ store, renders, notables }: Props) {
   };
 
   const endPointer = (e: React.PointerEvent) => {
+    const d = drag.current;
+    const p = localPoint(e);
+
+    // Zoom a rettangolo: applica la selezione (se abbastanza grande).
+    if (d?.type === 'box') {
+      const x0 = Math.min(d.sx, p.x);
+      const x1 = Math.max(d.sx, p.x);
+      const y0 = Math.min(d.sy, p.y);
+      const y1 = Math.max(d.sy, p.y);
+      if (x1 - x0 > 12 && y1 - y0 > 12) {
+        setView({ xMin: worldX(x0), xMax: worldX(x1), yMin: worldY(y1), yMax: worldY(y0) });
+      }
+      setBoxRect(null);
+      setBoxArm(false);
+    }
+
+    // Clic secco (niente trascinamento) su un punto notevole → pin on/off.
+    if (d?.type === 'pan' && !d.moved) {
+      let best: NotablePt | null = null;
+      let bestDist = 13;
+      for (const n of notables) {
+        const dd = Math.hypot(px(n.x) - p.x, py(n.y) - p.y);
+        if (dd < bestDist) {
+          bestDist = dd;
+          best = n;
+        }
+      }
+      if (best) {
+        const target = best;
+        setScene((s) => ({ ...s, pins: togglePin(s, target) }));
+      }
+    }
+
     pointers.current.delete(e.pointerId);
     if (pointers.current.size === 0) {
       drag.current = null;
     } else if (pointers.current.size === 1) {
-      const [p] = [...pointers.current.values()];
-      drag.current = { type: 'pan', view0: { ...view }, sx: p.x, sy: p.y };
+      const [q] = [...pointers.current.values()];
+      drag.current = { type: 'pan', view0: { ...view }, sx: q.x, sy: q.y, moved: true };
     }
   };
 
@@ -366,8 +436,58 @@ export function PlotCanvas({ store, renders, notables }: Props) {
     setView({ ...view, yMin: cy - yr / 2, yMax: cy + yr / 2 });
   };
 
-  const zoomCenter = (factor: number) =>
-    applyZoom((view.xMin + view.xMax) / 2, (view.yMin + view.yMax) / 2, factor);
+  const zoomCenter = useCallback(
+    (factor: number) => applyZoom((view.xMin + view.xMax) / 2, (view.yMin + view.yMax) / 2, factor),
+    [view, applyZoom]
+  );
+
+  // Tastiera: frecce = pan, + / − = zoom (mai mentre si scrive in un campo).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const dx = (view.xMax - view.xMin) * 0.08;
+      const dy = (view.yMax - view.yMin) * 0.08;
+      const shift = (mx: number, my: number) =>
+        setView({
+          xMin: view.xMin + mx,
+          xMax: view.xMax + mx,
+          yMin: view.yMin + my,
+          yMax: view.yMax + my,
+        });
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          shift(-dx, 0);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          shift(dx, 0);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          shift(0, dy);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          shift(0, -dy);
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          zoomCenter(0.8);
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          zoomCenter(1.25);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, setView, zoomCenter]);
 
   const axisXpx = Math.max(2, Math.min(w - 2, px(0)));
   const axisYpx = Math.max(2, Math.min(h - 2, py(0)));
@@ -388,6 +508,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
         viewBox={`0 0 ${w} ${h}`}
         role="img"
         aria-label="Piano cartesiano"
+        style={boxArm ? { cursor: 'crosshair' } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}
@@ -416,8 +537,12 @@ export function PlotCanvas({ store, renders, notables }: Props) {
         )}
 
         {/* Assi */}
-        {showYAxis && <line x1={axisXpx} y1={0} x2={axisXpx} y2={h} className="plot-axis" />}
-        {showXAxis && <line x1={0} y1={axisYpx} x2={w} y2={axisYpx} className="plot-axis" />}
+        {showYAxis && (
+          <line x1={axisXpx} y1={0} x2={axisXpx} y2={h} className="plot-axis" style={{ strokeWidth: board ? 2.4 : 1.5 }} />
+        )}
+        {showXAxis && (
+          <line x1={0} y1={axisYpx} x2={w} y2={axisYpx} className="plot-axis" style={{ strokeWidth: board ? 2.4 : 1.5 }} />
+        )}
 
         {/* Etichette dei tick */}
         {grid.xTicks.map((t) =>
@@ -426,7 +551,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
               key={`xl${t.v}`}
               x={px(t.v) + 3}
               y={Math.max(14, Math.min(h - 5, axisYpx + 15))}
-              fontSize="11"
+              fontSize={BT}
               fontFamily={MONO}
               className="plot-tick"
             >
@@ -440,7 +565,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
               key={`yl${t.v}`}
               x={Math.max(4, Math.min(w - 34, axisXpx + 5))}
               y={py(t.v) - 4}
-              fontSize="11"
+              fontSize={BT}
               fontFamily={MONO}
               className="plot-tick"
             >
@@ -449,7 +574,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
           )
         )}
         {showXAxis && showYAxis && (
-          <text x={axisXpx + 5} y={axisYpx + 15} fontSize="11" fontFamily={MONO} className="plot-tick">
+          <text x={axisXpx + 5} y={axisYpx + 15} fontSize={BT} fontFamily={MONO} className="plot-tick">
             0
           </text>
         )}
@@ -470,12 +595,23 @@ export function PlotCanvas({ store, renders, notables }: Props) {
               d={d}
               fill="none"
               stroke={r.f.color}
-              strokeWidth={r.f.width}
+              strokeWidth={r.f.width * BW}
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeDasharray={dashFor(r.f.style, r.f.width)}
+              strokeDasharray={dashFor(r.f.style, r.f.width * BW)}
             />
           ))
+        )}
+
+        {/* Successioni: punti discreti */}
+        {paths.map(({ r, dots }) =>
+          dots.length > 0 ? (
+            <g key={`seq${r.f.id}`} fill={r.f.color}>
+              {dots.map((d, i) => (
+                <circle key={i} cx={d.x} cy={d.y} r={(r.f.width + 1.2) * BW} />
+              ))}
+            </g>
+          ) : null
         )}
 
         {/* Derivate (tratteggio leggero, stesso colore) */}
@@ -486,7 +622,7 @@ export function PlotCanvas({ store, renders, notables }: Props) {
               d={d}
               fill="none"
               stroke={r.f.color}
-              strokeWidth={Math.max(1.2, r.f.width - 1)}
+              strokeWidth={Math.max(1.2, r.f.width - 1) * BW}
               strokeDasharray="6 5"
               opacity={0.55}
             />
@@ -507,14 +643,14 @@ export function PlotCanvas({ store, renders, notables }: Props) {
                 x2={px(view.xMax)}
                 y2={py(y2)}
                 stroke={r.f.color}
-                strokeWidth={1.4}
+                strokeWidth={1.4 * BW}
                 strokeDasharray="9 6"
                 opacity={0.8}
               />
               <circle
                 cx={px(t.x0)}
                 cy={py(t.y0)}
-                r={7}
+                r={board ? 9 : 7}
                 fill={r.f.color}
                 stroke="#fff"
                 strokeWidth={2}
@@ -561,17 +697,42 @@ export function PlotCanvas({ store, renders, notables }: Props) {
           );
         })}
 
-        {/* Punti notevoli */}
+        {/* Punti notevoli (clic = fissa/lascia l'etichetta) */}
         {notables.map((n, i) => (
           <circle
             key={`n${i}`}
             cx={px(n.x)}
             cy={py(n.y)}
-            r={4.5}
+            r={BR}
             className="plot-notable"
             stroke={n.color}
           />
         ))}
+
+        {/* Anello sui punti appuntati */}
+        {pins.map((p, i) => (
+          <circle
+            key={`pr${i}`}
+            cx={px(p.x)}
+            cy={py(p.y)}
+            r={BR + 3.5}
+            fill="none"
+            stroke={p.color}
+            strokeWidth={1.6}
+            opacity={0.9}
+          />
+        ))}
+
+        {/* Selezione dello zoom a rettangolo */}
+        {boxRect && (
+          <rect
+            x={Math.min(boxRect.x0, boxRect.x1)}
+            y={Math.min(boxRect.y0, boxRect.y1)}
+            width={Math.abs(boxRect.x1 - boxRect.x0)}
+            height={Math.abs(boxRect.y1 - boxRect.y0)}
+            className="plot-boxzoom"
+          />
+        )}
 
         {/* Trace */}
         {trace && (
@@ -622,6 +783,19 @@ export function PlotCanvas({ store, renders, notables }: Props) {
           </div>
         ) : null
       )}
+      {pins.map((p, i) => (
+        <div
+          key={`pc${i}`}
+          className={`plot-chip is-pin${board ? ' is-board' : ''}`}
+          style={{
+            left: Math.min(w - 170, Math.max(4, px(p.x) + 10)),
+            top: Math.max(4, py(p.y) - (board ? 40 : 32)),
+            borderColor: p.color,
+          }}
+        >
+          {p.text}
+        </div>
+      ))}
 
       {/* Toolbar del piano */}
       <div className="plot-tools">
@@ -630,6 +804,15 @@ export function PlotCanvas({ store, renders, notables }: Props) {
         </button>
         <button type="button" className="plot-tool" title="Allarga" onClick={() => zoomCenter(1 / 0.6)}>
           <ZoomOut size={15} />
+        </button>
+        <button
+          type="button"
+          className={`plot-tool${boxArm ? ' active' : ''}`}
+          title="Zoom a rettangolo (oppure Shift+trascina)"
+          aria-pressed={boxArm}
+          onClick={() => setBoxArm((v) => !v)}
+        >
+          <BoxSelect size={15} />
         </button>
         <button type="button" className="plot-tool" title="Adatta la vista alle curve" onClick={fitView}>
           <Scan size={15} />

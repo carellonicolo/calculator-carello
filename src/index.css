@@ -512,6 +512,9 @@ label {
 .mode-bar-wrap {
   display: flex;
   justify-content: center;
+  /* Spazio simmetrico: stesso respiro sopra (verso l'header) e sotto (verso la
+     calcolatrice), così la barra modalità resta centrata nella fascia. */
+  margin-top: 16px;
   margin-bottom: 16px;
 }
 
@@ -876,6 +879,36 @@ label {
   text-align: right;
   min-height: 18px;
   margin-bottom: 4px;
+}
+
+.prog-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.prog-bit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  width: 20px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.prog-bit:hover { border-color: var(--primary); }
+
+.prog-bit.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
 }
 
 .prog-layout { display: grid; grid-template-columns: 4fr 2fr; gap: 14px; }

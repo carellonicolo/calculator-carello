@@ -24,9 +24,10 @@ export interface EnginePermissions {
 
 export const ALL_FUNCTIONS = [
   'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
-  'sinh', 'cosh', 'tanh',
-  'ln', 'log', 'sqrt', 'cbrt', 'exp', 'pow10', 'abs',
-  'floor', 'ceil', 'round', 'sign',
+  'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
+  'ln', 'log', 'logb', 'sqrt', 'cbrt', 'root', 'exp', 'pow10', 'abs',
+  'floor', 'ceil', 'round', 'sign', 'mod',
+  'ncr', 'npr',
   'se', 'min', 'max',
 ] as const;
 
@@ -35,6 +36,11 @@ const FN_ARITY: Record<string, { min: number; max: number }> = {
   se: { min: 3, max: 3 },
   min: { min: 2, max: 8 },
   max: { min: 2, max: 8 },
+  logb: { min: 2, max: 2 },
+  root: { min: 2, max: 2 },
+  mod: { min: 2, max: 2 },
+  ncr: { min: 2, max: 2 },
+  npr: { min: 2, max: 2 },
 };
 
 function arityOf(name: string): { min: number; max: number } {
@@ -331,6 +337,35 @@ function factorial(v: number): number {
   return r;
 }
 
+/** Disposizioni nPr = n·(n−1)·…·(n−k+1). Interi ≥ 0 con k ≤ n. */
+function permutations(n: number, k: number): number {
+  if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0) {
+    throw new CalcError('nPr richiede interi ≥ 0');
+  }
+  if (k > n) throw new CalcError('nPr richiede k ≤ n');
+  let r = 1;
+  for (let i = 0; i < k; i++) {
+    r *= n - i;
+    if (!Number.isFinite(r)) throw new CalcError('Risultato troppo grande');
+  }
+  return r;
+}
+
+/** Combinazioni nCr = nPr / k!, calcolate senza overflow intermedio. */
+function combinations(n: number, k: number): number {
+  if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0) {
+    throw new CalcError('nCr richiede interi ≥ 0');
+  }
+  if (k > n) throw new CalcError('nCr richiede k ≤ n');
+  const kk = Math.min(k, n - k);
+  let r = 1;
+  for (let i = 1; i <= kk; i++) {
+    r = (r * (n - kk + i)) / i;
+    if (!Number.isFinite(r)) throw new CalcError('Risultato troppo grande');
+  }
+  return Math.round(r);
+}
+
 function applyFn(name: string, x: number, mode: AngleMode): number {
   switch (name) {
     case 'sin':
@@ -358,6 +393,14 @@ function applyFn(name: string, x: number, mode: AngleMode): number {
       return Math.sqrt(x);
     case 'cbrt':
       return Math.cbrt(x);
+    case 'asinh':
+      return Math.asinh(x);
+    case 'acosh':
+      if (x < 1) throw new CalcError('acosh: dominio [1, +∞)');
+      return Math.acosh(x);
+    case 'atanh':
+      if (x <= -1 || x >= 1) throw new CalcError('atanh: dominio (−1, 1)');
+      return Math.atanh(x);
     case 'exp':
       return Math.exp(x);
     case 'pow10':
@@ -464,6 +507,36 @@ function evalAst(ast: Ast, opts: EvalOptions, vars: Record<string, number>): num
       if (ast.name === 'min' || ast.name === 'max') {
         const vals = ast.args.map((a) => evalAst(a, opts, vars));
         return ast.name === 'min' ? Math.min(...vals) : Math.max(...vals);
+      }
+      if (ast.name === 'logb') {
+        const base = evalAst(ast.args[0], opts, vars);
+        const v = evalAst(ast.args[1], opts, vars);
+        if (v <= 0) throw new CalcError('Logaritmo di un numero non positivo');
+        if (base <= 0 || base === 1) throw new CalcError('Base del logaritmo non valida (>0 e ≠1)');
+        return Math.log(v) / Math.log(base);
+      }
+      if (ast.name === 'root') {
+        const n = evalAst(ast.args[0], opts, vars);
+        const v = evalAst(ast.args[1], opts, vars);
+        if (n === 0) throw new CalcError('Indice della radice nullo');
+        // Indice intero dispari: radice reale anche di radicandi negativi.
+        if (v < 0) {
+          if (Number.isInteger(n) && Math.abs(n % 2) === 1) return -Math.pow(-v, 1 / n);
+          throw new CalcError('Radice di indice pari di un numero negativo');
+        }
+        return Math.pow(v, 1 / n);
+      }
+      if (ast.name === 'mod') {
+        const a = evalAst(ast.args[0], opts, vars);
+        const b = evalAst(ast.args[1], opts, vars);
+        if (b === 0) throw new CalcError('Modulo per zero');
+        return a - b * Math.floor(a / b);
+      }
+      if (ast.name === 'ncr') {
+        return combinations(evalAst(ast.args[0], opts, vars), evalAst(ast.args[1], opts, vars));
+      }
+      if (ast.name === 'npr') {
+        return permutations(evalAst(ast.args[0], opts, vars), evalAst(ast.args[1], opts, vars));
       }
       return applyFn(ast.name, evalAst(ast.args[0], opts, vars), opts.angleMode);
     }

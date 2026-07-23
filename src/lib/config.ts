@@ -47,14 +47,22 @@ export function enginePermissions(c: CalcConfig): EnginePermissions {
   if (c.standard.sqrt) functions.add('sqrt');
   if (c.scientific.enabled) {
     if (c.scientific.trig) {
-      for (const f of ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh']) functions.add(f);
+      for (const f of [
+        'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+        'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
+      ]) functions.add(f);
     }
     if (c.scientific.logExp) {
-      for (const f of ['ln', 'log', 'exp', 'pow10']) functions.add(f);
+      for (const f of ['ln', 'log', 'logb', 'exp', 'pow10']) functions.add(f);
     }
-    if (c.scientific.powRoot) functions.add('cbrt');
+    if (c.scientific.powRoot) {
+      for (const f of ['cbrt', 'root']) functions.add(f);
+    }
+    if (c.scientific.factorial) {
+      for (const f of ['ncr', 'npr']) functions.add(f);
+    }
     if (c.scientific.rounding) {
-      for (const f of ['floor', 'ceil', 'round', 'sign']) functions.add(f);
+      for (const f of ['floor', 'ceil', 'round', 'sign', 'mod']) functions.add(f);
     }
   }
   return {
@@ -103,12 +111,12 @@ export const AREAS: AreaMeta[] = [
     hint: 'Funzioni matematiche avanzate',
     hasMaster: true,
     groups: [
-      { area: 'scientific', key: 'trig', label: 'Trigonometria', hint: 'sin · cos · tan · inverse · iperboliche · DEG/RAD' },
-      { area: 'scientific', key: 'logExp', label: 'Logaritmi ed esponenziali', hint: 'ln · log₁₀ · eˣ · 10ˣ' },
-      { area: 'scientific', key: 'powRoot', label: 'Potenze e radici', hint: 'x² · x³ · xʸ · ∛ · 1/x' },
-      { area: 'scientific', key: 'factorial', label: 'Fattoriale', hint: 'n!' },
+      { area: 'scientific', key: 'trig', label: 'Trigonometria', hint: 'sin · cos · tan · inverse · iperboliche + inverse · DEG/RAD' },
+      { area: 'scientific', key: 'logExp', label: 'Logaritmi ed esponenziali', hint: 'ln · log₁₀ · logₐ · eˣ · 10ˣ' },
+      { area: 'scientific', key: 'powRoot', label: 'Potenze e radici', hint: 'x² · x³ · xʸ · ∛ · ⁿ√ · 1/x' },
+      { area: 'scientific', key: 'factorial', label: 'Fattoriale e combinatoria', hint: 'n! · nCr · nPr' },
       { area: 'scientific', key: 'constants', label: 'Costanti', hint: 'π · e' },
-      { area: 'scientific', key: 'rounding', label: 'Arrotondamenti e segno', hint: 'floor · ceil · round · sign' },
+      { area: 'scientific', key: 'rounding', label: 'Arrotondamenti e segno', hint: 'floor · ceil · round · sign · mod' },
     ],
   },
   {
@@ -128,7 +136,7 @@ export const AREAS: AreaMeta[] = [
     hasMaster: true,
     groups: [
       { area: 'graphing', key: 'paramPolar', label: 'Curve parametriche e polari', hint: 'x(t), y(t) · r(θ)' },
-      { area: 'graphing', key: 'analysis', label: 'Punti notevoli', hint: 'zeri · max/min · intersezioni' },
+      { area: 'graphing', key: 'analysis', label: 'Punti notevoli', hint: 'zeri · max/min · flessi · intersezioni' },
       { area: 'graphing', key: 'calculus', label: 'Derivate e integrali', hint: 'f′(x) · tangente · area sotto la curva' },
       { area: 'graphing', key: 'sliders', label: 'Parametri con slider', hint: 'a·x² + b → slider animabili' },
       { area: 'graphing', key: 'table', label: 'Tabella dei valori', hint: 'x → f(x) con passo a scelta' },

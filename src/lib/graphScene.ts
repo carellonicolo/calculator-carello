@@ -9,7 +9,7 @@ import type { AngleMode } from './engine/evaluator';
 export type CurveKind = 'explicit' | 'parametric' | 'polar' | 'sequence';
 export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
 
-export type PinKind = 'zero' | 'max' | 'min' | 'intersection';
+export type PinKind = 'zero' | 'max' | 'min' | 'intersection' | 'inflection';
 
 /**
  * Punto notevole "appuntato": l'etichetta con le coordinate resta visibile
@@ -73,7 +73,7 @@ export interface GraphScene {
   minorGrid: boolean;
   piTicks: boolean;
   /** Punti notevoli calcolati su tutte le esplicite visibili. */
-  tools: { zeros: boolean; extrema: boolean; intersections: boolean };
+  tools: { zeros: boolean; extrema: boolean; intersections: boolean; inflections: boolean };
   /** Etichette fissate con un clic sui punti notevoli. */
   pins: ScenePin[];
 }
@@ -131,7 +131,7 @@ export function defaultScene(firstSrc = 'sin(x)'): GraphScene {
     grid: true,
     minorGrid: true,
     piTicks: false,
-    tools: { zeros: false, extrema: false, intersections: false },
+    tools: { zeros: false, extrema: false, intersections: false, inflections: false },
     pins: [],
   };
 }
@@ -242,7 +242,8 @@ export function sanitizeScene(raw: unknown): GraphScene | null {
     if (!p || typeof p !== 'object') continue;
     const o = p as Record<string, unknown>;
     const kind = o.kind;
-    if (kind !== 'zero' && kind !== 'max' && kind !== 'min' && kind !== 'intersection') continue;
+    if (kind !== 'zero' && kind !== 'max' && kind !== 'min' && kind !== 'intersection' && kind !== 'inflection')
+      continue;
     const fid = str(o.fid, '');
     const x = num(o.x, NaN);
     if (!fid || !Number.isFinite(x)) continue;
@@ -261,6 +262,7 @@ export function sanitizeScene(raw: unknown): GraphScene | null {
       zeros: bool(t.zeros, false),
       extrema: bool(t.extrema, false),
       intersections: bool(t.intersections, false),
+      inflections: bool(t.inflections, false),
     },
     pins,
   };

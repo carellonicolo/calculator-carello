@@ -11,7 +11,7 @@ export type Fn = (x: number) => number;
 export interface NotablePoint {
   x: number;
   y: number;
-  kind: 'zero' | 'max' | 'min' | 'intersection';
+  kind: 'zero' | 'max' | 'min' | 'intersection' | 'inflection';
 }
 
 /** Valutazione tollerante: errori di dominio → NaN (non propagano). */
@@ -123,6 +123,28 @@ export function findExtrema(f: Fn, xMin: number, xMax: number, samples = 480): N
     out.push({ x, y, kind: isMax ? 'max' : 'min' });
   }
   return out;
+}
+
+/** Derivata seconda numerica in x. NaN se non calcolabile. */
+export function secondDerivativeAt(f: Fn, x: number): number {
+  const h = 1e-3 * Math.max(1, Math.abs(x));
+  const m1 = safe(f, x - h);
+  const c = safe(f, x);
+  const p1 = safe(f, x + h);
+  if (Number.isNaN(m1) || Number.isNaN(c) || Number.isNaN(p1)) return NaN;
+  return (m1 - 2 * c + p1) / (h * h);
+}
+
+/**
+ * Punti di flesso di f su [xMin, xMax]: cambi di segno della derivata seconda
+ * (max ~40). Le funzioni con f″ costante (rette, parabole) non ne hanno.
+ */
+export function findInflections(f: Fn, xMin: number, xMax: number): NotablePoint[] {
+  const f2: Fn = (x) => secondDerivativeAt(f, x);
+  return findZeros(f2, xMin, xMax)
+    .slice(0, 40)
+    .map((x) => ({ x, y: safe(f, x), kind: 'inflection' as const }))
+    .filter((p) => !Number.isNaN(p.y));
 }
 
 /** Intersezioni tra f e g su [xMin, xMax]: zeri di f − g. */

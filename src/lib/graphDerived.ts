@@ -21,6 +21,7 @@ import {
 import {
   derivativeAt,
   findExtrema,
+  findInflections,
   findIntersections,
   findZeros,
   integrate,
@@ -53,7 +54,7 @@ export interface CurveRender {
 export interface NotablePt {
   x: number;
   y: number;
-  kind: 'zero' | 'max' | 'min' | 'intersection';
+  kind: 'zero' | 'max' | 'min' | 'intersection' | 'inflection';
   color: string;
   /** Etichetta breve ("zero", "max", "∩"). */
   label: string;
@@ -191,8 +192,8 @@ export function buildNotables(
   features: GraphFeatures
 ): NotablePt[] {
   if (!features.analysis) return [];
-  const { zeros, extrema, intersections } = scene.tools;
-  if (!zeros && !extrema && !intersections) return [];
+  const { zeros, extrema, intersections, inflections } = scene.tools;
+  if (!zeros && !extrema && !intersections && !inflections) return [];
   const { xMin, xMax } = scene.view;
   const out: NotablePt[] = [];
   const usable = renders.filter((r) => r.fn !== null && r.f.visible);
@@ -207,6 +208,11 @@ export function buildNotables(
     if (extrema) {
       for (const p of findExtrema(fn, xMin, xMax)) {
         out.push({ ...p, color: r.f.color, label: p.kind === 'max' ? 'max' : 'min', fid: r.f.id });
+      }
+    }
+    if (inflections) {
+      for (const p of findInflections(fn, xMin, xMax)) {
+        out.push({ ...p, color: r.f.color, label: 'flesso', fid: r.f.id });
       }
     }
   }

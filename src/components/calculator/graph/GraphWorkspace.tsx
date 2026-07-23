@@ -11,6 +11,7 @@ import {
   Maximize,
   Minimize,
   Presentation,
+  Spline,
   Table2,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -136,7 +137,7 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
   };
 
   const toolChip = (
-    key: 'zeros' | 'extrema' | 'intersections',
+    key: 'zeros' | 'extrema' | 'intersections' | 'inflections',
     label: string,
     Icon: typeof CircleDot
   ) => (
@@ -173,6 +174,7 @@ export function GraphWorkspace({ config, history, userEmail, userName, recall, o
           <div className="graph-chips" role="group" aria-label="Punti notevoli">
             {toolChip('zeros', 'Zeri', CircleDot)}
             {toolChip('extrema', 'Max/min', ArrowUpDown)}
+            {toolChip('inflections', 'Flessi', Spline)}
             {toolChip('intersections', 'Intersezioni', Combine)}
           </div>
         )}

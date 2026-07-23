@@ -49,12 +49,25 @@ export function ScientificPad({ calc, config }: Props) {
               <Key label="sin⁻¹" variant="fn" onPress={() => calc.pressToken('asin(', 'sin⁻¹(')} />
               <Key label="cos⁻¹" variant="fn" onPress={() => calc.pressToken('acos(', 'cos⁻¹(')} />
               <Key label="tan⁻¹" variant="fn" onPress={() => calc.pressToken('atan(', 'tan⁻¹(')} />
+              <Key label="sinh" variant="fn" onPress={() => calc.pressToken('sinh(', 'sinh(')} />
+              <Key label="cosh" variant="fn" onPress={() => calc.pressToken('cosh(', 'cosh(')} />
+              <Key label="tanh" variant="fn" onPress={() => calc.pressToken('tanh(', 'tanh(')} />
+              <Key label="sinh⁻¹" variant="fn" smallLabel onPress={() => calc.pressToken('asinh(', 'sinh⁻¹(')} />
+              <Key label="cosh⁻¹" variant="fn" smallLabel onPress={() => calc.pressToken('acosh(', 'cosh⁻¹(')} />
+              <Key label="tanh⁻¹" variant="fn" smallLabel onPress={() => calc.pressToken('atanh(', 'tanh⁻¹(')} />
             </>
           )}
           {sci.logExp && (
             <>
               <Key label="ln" variant="fn" onPress={() => calc.pressToken('ln(', 'ln(')} />
               <Key label="log₁₀" variant="fn" onPress={() => calc.pressToken('log(', 'log(')} />
+              <Key
+                label="logₐb"
+                variant="fn"
+                smallLabel
+                title="Logaritmo in base a: logₐb = logb(base; valore)"
+                onPress={() => calc.pressToken('logb(', 'logₐ(')}
+              />
               <Key label="eˣ" variant="fn" onPress={() => calc.pressToken('exp(', 'e^(')} />
               <Key label="10ˣ" variant="fn" onPress={() => calc.pressToken('pow10(', '10^(')} />
             </>
@@ -65,10 +78,49 @@ export function ScientificPad({ calc, config }: Props) {
               <Key label="x³" variant="fn" onPress={() => calc.pressToken('^3', '³')} />
               <Key label="xʸ" variant="fn" onPress={() => calc.pressToken('^')} />
               <Key label="∛" variant="fn" onPress={() => calc.pressToken('cbrt(', '∛(')} />
+              <Key
+                label="ⁿ√"
+                variant="fn"
+                title="Radice n-esima: ⁿ√x = root(n; x)"
+                onPress={() => calc.pressToken('root(', 'ⁿ√(')}
+              />
               <Key label="¹⁄ₓ" variant="fn" onPress={() => calc.pressToken('1/(', '1/(')} />
             </>
           )}
-          {sci.factorial && <Key label="n!" variant="fn" onPress={() => calc.pressToken('!')} />}
+          {sci.factorial && (
+            <>
+              <Key label="n!" variant="fn" onPress={() => calc.pressToken('!')} />
+              <Key
+                label="nCr"
+                variant="fn"
+                smallLabel
+                title="Combinazioni: nCr = ncr(n; k)"
+                onPress={() => calc.pressToken('ncr(', 'nCr(')}
+              />
+              <Key
+                label="nPr"
+                variant="fn"
+                smallLabel
+                title="Disposizioni: nPr = npr(n; k)"
+                onPress={() => calc.pressToken('npr(', 'nPr(')}
+              />
+            </>
+          )}
+          {sci.rounding && (
+            <>
+              <Key label="floor" variant="fn" smallLabel onPress={() => calc.pressToken('floor(', 'floor(')} />
+              <Key label="ceil" variant="fn" smallLabel onPress={() => calc.pressToken('ceil(', 'ceil(')} />
+              <Key label="round" variant="fn" smallLabel onPress={() => calc.pressToken('round(', 'round(')} />
+              <Key label="sign" variant="fn" smallLabel onPress={() => calc.pressToken('sign(', 'sign(')} />
+              <Key
+                label="mod"
+                variant="fn"
+                smallLabel
+                title="Resto: mod(a; b)"
+                onPress={() => calc.pressToken('mod(', 'mod(')}
+              />
+            </>
+          )}
           {sci.constants && (
             <>
               <Key label="π" variant="fn" onPress={() => calc.pressToken('pi', 'π')} />

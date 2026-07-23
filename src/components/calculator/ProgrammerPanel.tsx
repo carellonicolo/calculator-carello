@@ -196,14 +196,29 @@ export function ProgrammerPanel({ config, history, recall }: Props) {
     setCurrent((c) => c.slice(0, -1));
   }, []);
 
+  const toggleBit = useCallback(
+    (index: number) => {
+      setError(null);
+      const v = maskToWord(shownValue ^ (1n << BigInt(index)), bits);
+      setCurrent(formatInBase(v, inputBase).toLowerCase());
+    },
+    [shownValue, bits, inputBase]
+  );
+
   const validDigits = useMemo(() => new Set(digitsForBase(inputBase)), [inputBase]);
   const rows = baseConv ? BASES : BASES.filter((b) => b.base === 10);
+
+  // Bit dal più significativo (MSB) al meno, per la griglia cliccabile.
+  const bitIndexes = useMemo(
+    () => Array.from({ length: bits }, (_, i) => bits - 1 - i),
+    [bits]
+  );
 
   return (
     <div>
       <div className="pad-toolbar">
         <div className="seg" role="radiogroup" aria-label="Dimensione word">
-          {([8, 16, 32] as WordSize[]).map((b) => (
+          {([8, 16, 32, 64] as WordSize[]).map((b) => (
             <button
               key={b}
               type="button"
@@ -241,6 +256,26 @@ export function ProgrammerPanel({ config, history, recall }: Props) {
         ))}
       </div>
 
+      <div className="prog-bits" role="group" aria-label="Bit (clic per invertire)">
+        {bitIndexes.map((idx, i) => {
+          const on = (shownValue >> BigInt(idx)) & 1n;
+          const gap = i > 0 && idx % 4 === 3;
+          return (
+            <button
+              key={idx}
+              type="button"
+              className={`prog-bit${on ? ' on' : ''}`}
+              style={gap ? { marginLeft: 6 } : undefined}
+              onClick={() => toggleBit(idx)}
+              title={`bit ${idx}`}
+              aria-label={`bit ${idx}: ${on ? 1 : 0}`}
+            >
+              {on ? '1' : '0'}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="prog-layout">
         <div className="prog-digits">
           <Key label="AC" variant="danger" onPress={clearAll} />
@@ -272,6 +307,8 @@ export function ProgrammerPanel({ config, history, recall }: Props) {
               <Key label="NOT" variant="fn" smallLabel onPress={() => pressOp('NOT')} />
               <Key label="<<" variant="fn" smallLabel onPress={() => pressOp('SHL')} />
               <Key label=">>" variant="fn" smallLabel onPress={() => pressOp('SHR')} />
+              <Key label="ROL" variant="fn" smallLabel onPress={() => pressOp('ROL')} />
+              <Key label="ROR" variant="fn" smallLabel onPress={() => pressOp('ROR')} />
             </>
           )}
           <Key label="+" variant="op" onPress={() => pressOp('ADD')} />

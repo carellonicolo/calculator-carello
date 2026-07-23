@@ -10,6 +10,24 @@ import {
 } from './bases';
 import { CalcError } from './evaluator';
 
+describe('rotazioni e word 64 bit', () => {
+  it('ROL/ROR su 8 bit', () => {
+    // 0b1000_0001 ROL 1 = 0b0000_0011
+    expect(progApply('ROL', 0x81n, 1n, 8)).toBe(0x03n);
+    // 0b0000_0011 ROR 1 = 0b1000_0001
+    expect(progApply('ROR', 0x03n, 1n, 8)).toBe(0x81n);
+    // rotazione di 0 = identità
+    expect(progApply('ROL', 0x5an, 0n, 8)).toBe(0x5an);
+    // rotazione di una word intera = identità
+    expect(progApply('ROL', 0x5an, 8n, 8)).toBe(0x5an);
+  });
+
+  it('word a 64 bit', () => {
+    expect(maskToWord(-1n, 64)).toBe((1n << 64n) - 1n);
+    expect(toSigned((1n << 63n), 64)).toBe(-(1n << 63n));
+  });
+});
+
 describe('conversioni di base', () => {
   it('parse e format in tutte le basi', () => {
     expect(parseInBase('ff', 16)).toBe(255n);

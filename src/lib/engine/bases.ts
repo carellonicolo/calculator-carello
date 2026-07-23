@@ -7,7 +7,7 @@
 import { CalcError } from './evaluator';
 
 export type Base = 2 | 8 | 10 | 16;
-export type WordSize = 8 | 16 | 32;
+export type WordSize = 8 | 16 | 32 | 64;
 
 export const BASES: { base: Base; label: string; prefix: string }[] = [
   { base: 16, label: 'HEX', prefix: '0x' },
@@ -66,7 +66,10 @@ export function toSigned(v: bigint, bits: WordSize): bigint {
   return v >= half ? v - (1n << BigInt(bits)) : v;
 }
 
-export type ProgOp = 'AND' | 'OR' | 'XOR' | 'NOT' | 'SHL' | 'SHR' | 'ADD' | 'SUB' | 'MUL' | 'DIV' | 'MOD';
+export type ProgOp =
+  | 'AND' | 'OR' | 'XOR' | 'NOT'
+  | 'SHL' | 'SHR' | 'ROL' | 'ROR'
+  | 'ADD' | 'SUB' | 'MUL' | 'DIV' | 'MOD';
 
 /** Le operazioni unarie non chiedono il secondo operando. */
 export function isUnary(op: ProgOp): boolean {
@@ -81,6 +84,8 @@ export const PROG_OP_LABEL: Record<ProgOp, string> = {
   NOT: 'NOT',
   SHL: '<<',
   SHR: '>>',
+  ROL: 'ROL',
+  ROR: 'ROR',
   ADD: '+',
   SUB: '−',
   MUL: '×',
@@ -109,6 +114,18 @@ export function progApply(op: ProgOp, a: bigint, b: bigint, bits: WordSize): big
     case 'SHR':
       if (b < 0n || b > BigInt(bits)) throw new CalcError(`Shift fuori intervallo (0–${bits})`);
       return a >> b;
+    case 'ROL': {
+      if (b < 0n) throw new CalcError('Rotazione negativa');
+      const w = BigInt(bits);
+      const r = ((b % w) + w) % w;
+      return ((a << r) | (a >> (w - r))) & mask;
+    }
+    case 'ROR': {
+      if (b < 0n) throw new CalcError('Rotazione negativa');
+      const w = BigInt(bits);
+      const r = ((b % w) + w) % w;
+      return ((a >> r) | (a << (w - r))) & mask;
+    }
     case 'ADD':
       return (a + b) & mask;
     case 'SUB':

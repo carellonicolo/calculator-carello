@@ -12,6 +12,43 @@ import {
 const rad = { angleMode: 'rad' as const, permissions: fullPermissions() };
 const deg = { angleMode: 'deg' as const, permissions: fullPermissions() };
 
+describe('evaluate — nuove funzioni scientifiche', () => {
+  it('iperboliche inverse', () => {
+    expect(evaluate('asinh(0)', rad)).toBe(0);
+    expect(evaluate('acosh(1)', rad)).toBe(0);
+    expect(evaluate('atanh(0)', rad)).toBe(0);
+    expect(() => evaluate('acosh(0.5)', rad)).toThrow(CalcError);
+    expect(() => evaluate('atanh(1)', rad)).toThrow(CalcError);
+  });
+
+  it('logaritmo in base arbitraria', () => {
+    expect(evaluate('logb(2; 8)', rad)).toBeCloseTo(3, 10);
+    expect(evaluate('logb(10; 1000)', rad)).toBeCloseTo(3, 10);
+    expect(() => evaluate('logb(1; 5)', rad)).toThrow(CalcError);
+    expect(() => evaluate('logb(2; -1)', rad)).toThrow(CalcError);
+  });
+
+  it('radice n-esima, indice dispari su negativi', () => {
+    expect(evaluate('root(3; 27)', rad)).toBeCloseTo(3, 10);
+    expect(evaluate('root(3; -8)', rad)).toBeCloseTo(-2, 10);
+    expect(() => evaluate('root(2; -4)', rad)).toThrow(CalcError);
+  });
+
+  it('modulo con segno del divisore', () => {
+    expect(evaluate('mod(7; 3)', rad)).toBe(1);
+    expect(evaluate('mod(-1; 3)', rad)).toBe(2);
+    expect(() => evaluate('mod(5; 0)', rad)).toThrow(CalcError);
+  });
+
+  it('combinazioni e disposizioni', () => {
+    expect(evaluate('ncr(5; 2)', rad)).toBe(10);
+    expect(evaluate('npr(5; 2)', rad)).toBe(20);
+    expect(evaluate('ncr(10; 0)', rad)).toBe(1);
+    expect(() => evaluate('ncr(2; 5)', rad)).toThrow(CalcError);
+    expect(() => evaluate('ncr(2,5; 1)', rad)).toThrow(CalcError);
+  });
+});
+
 describe('evaluate — aritmetica', () => {
   it('rispetta le precedenze', () => {
     expect(evaluate('2+3*4', rad)).toBe(14);
